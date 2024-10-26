@@ -1,0 +1,10 @@
+[tool.poetry]
+name = "optimizer"
+version = "0.1.0"
+description = "There is no good description yet"
+authors = ["sillyc0n <137494122+sillyc0n@users.noreply.github.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+requests = "^2.32.3"
+
