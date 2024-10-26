@@ -2,6 +2,7 @@ import sys
 import requests
 import csv
 import time
+from tqdm import tqdm
 
 def scrape_funds_data(csv_file):
     # URL for JSON data
@@ -27,52 +28,44 @@ def scrape_funds_data(csv_file):
             # Counter for downloaded funds
             total_funds = 0
 
-            # Progress animation variables
-            animation = "|/-\\"
-            animate_index = 0
+            chunk = 20
+            with tqdm(total=None, desc="Downloading funds", unit='fund', ncols=70) as pbar:
+                # Iterate until "ResultsReturned" is 0
+                while True:
+                    # Construct the URL with the current start parameter
+                    url = base_url.format(start)
 
-            # Iterate until "ResultsReturned" is 0
-            while True:
-                # Construct the URL with the current start parameter
-                url = base_url.format(start)
+                    # Send a GET request to the URL
+                    response = requests.get(url)
 
-                # Send a GET request to the URL
-                response = requests.get(url)
+                    # Check if the request was successful
+                    if response.status_code == 200:
+                        # Get the JSON data from the response
+                        data = response.json()
 
-                # Check if the request was successful
-                if response.status_code == 200:
-                    # Get the JSON data from the response
-                    data = response.json()
+                        # Extract the "Results" list from the JSON data
+                        results = data["Results"]
 
-                    # Extract the "Results" list from the JSON data
-                    results = data["Results"]
+                        # Check if there are no more results
+                        if len(results) == 0:
+                            break
 
-                    # Check if there are no more results
-                    if len(results) == 0:
+                        # Write each fund's data as a row in the CSV file
+                        for fund in results:
+                            writer.writerow(fund.values())
+                            total_funds += 1
+
+                        # Increment the start parameter by a chunk
+                        start += chunk                        
+
+                        # Update progress
+                        pbar.update(chunk)
+
+                        # Add a delay for smoother animation
+                        time.sleep(0.2)
+                    else:
+                        print("\nFailed to retrieve data from the URL:", url)
                         break
-
-                    # Write each fund's data as a row in the CSV file
-                    for fund in results:
-                        writer.writerow(fund.values())
-                        total_funds += 1
-
-                    # Increment the start parameter by 20
-                    start += 20
-
-                    # Display progress animation and number of funds downloaded
-                    animate_char = animation[animate_index % len(animation)]
-                    progress = f"\rDownloading funds... {animate_char} {total_funds} funds downloaded"
-                    sys.stdout.write(progress)
-                    sys.stdout.flush()
-
-                    # Increment animation index
-                    animate_index += 1
-
-                    # Add a delay for smoother animation
-                    time.sleep(0.2)
-                else:
-                    print("\nFailed to retrieve data from the URL:", url)
-                    break
 
     print("\nData has been successfully saved to", csv_file)
 
