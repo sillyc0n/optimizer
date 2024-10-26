@@ -1,8 +1,12 @@
 name: Download Files and Commit
 
 on:
+  workflow_dispatch:
   schedule:
-    - cron: "0 0 * * 5" 
+    - cron: "0 0 * * 5"
+
+env:
+  OUTPUT_DIRECTORY: output
 
 jobs:
   download_and_commit:
@@ -12,13 +16,14 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: '3.x'
-    - run: |
-        python my_script.py      
+    - name: Create output directory
+      run: mkdir -p $OUTPUT_DIRECTORY
+    - name: Run Python script
+      run: python step01_download_hl.py $OUTPUT_DIRECTORY
     - name: Commit changes
       run: |
         git config user.name github-actions
         git config user.email github-actions@github.com
-        git add extracted/*
+        git add $OUTPUT_DIRECTORY/*
         git commit -m "Automated download and commit"
         git push
-
