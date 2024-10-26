@@ -7,12 +7,13 @@ on:
 
 env:
   OUTPUT_DIRECTORY: output
-
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  
 jobs:
   download_and_commit:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - uses: actions/setup-python@v2
       with:
         python-version: '3.x'
@@ -30,6 +31,7 @@ jobs:
       run: |
         git config user.name github-actions
         git config user.email github-actions@github.com
+        git remote set-url --push origin https://sillyc0n:$GITHUB_TOKEN@github.com/sillyc0n/optimizer.git
         git add -f $OUTPUT_DIRECTORY/*
         git commit -m "Automated download and commit - step01"
         git push

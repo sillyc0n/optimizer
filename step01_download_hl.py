@@ -29,7 +29,7 @@ def scrape_funds_data(csv_file):
             total_funds = 0
 
             chunk = 20
-            with tqdm(total=None, desc="Downloading funds", unit='fund', ncols=70) as pbar:
+            with tqdm(total=None, desc="Downloading", unit='funds', ncols=70) as pbar:
                 # Iterate until "ResultsReturned" is 0
                 while True:
                     # Construct the URL with the current start parameter
