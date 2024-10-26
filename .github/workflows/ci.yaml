@@ -1,0 +1,24 @@
+name: Download Files and Commit
+
+on:
+  schedule:
+    - cron: "0 0 * * 5" 
+
+jobs:
+  download_and_commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    - run: |
+        python my_script.py      
+    - name: Commit changes
+      run: |
+        git config user.name github-actions
+        git config user.email github-actions@github.com
+        git add extracted/*
+        git commit -m "Automated download and commit"
+        git push
+
