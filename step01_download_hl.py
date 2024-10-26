@@ -3,6 +3,7 @@ import requests
 import csv
 import time
 from tqdm import tqdm
+import json
 
 def scrape_funds_data(csv_file):
     # URL for JSON data
@@ -41,7 +42,11 @@ def scrape_funds_data(csv_file):
                     # Check if the request was successful
                     if response.status_code == 200:
                         # Get the JSON data from the response
-                        data = response.json()
+                        try:
+                            data = response.json()
+                        except json.decoder.JSONDecodeError:
+                            print(f"\nError decoding JSON response {response}")
+                            break                        
 
                         # Extract the "Results" list from the JSON data
                         results = data["Results"]
