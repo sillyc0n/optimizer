@@ -18,6 +18,12 @@ jobs:
         python-version: '3.x'
     - name: Create output directory
       run: mkdir -p $OUTPUT_DIRECTORY
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install poetry
+        poetry config virtualenvs.create false
+        poetry install --no-interaction --no-ansi
     - name: Run Python script
       run: python step01_download_hl.py $OUTPUT_DIRECTORY
     - name: Commit changes
