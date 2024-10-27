@@ -31,10 +31,13 @@ jobs:
         poetry install --no-interaction --no-ansi
     - name: Run Python script
       run: python step01_download_hl.py $OUTPUT_DIRECTORY/step01.csv
+    - name: List Output
+      run: ls -l $OUTPUT_DIRECTORY
     - name: Commit changes
-      run: |        
+      run: |  
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git status
         git add -f $OUTPUT_DIRECTORY/*
         git commit -m "Automated download and commit - step01"
         git push -f
