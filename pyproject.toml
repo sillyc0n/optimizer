@@ -8,4 +8,7 @@ authors = ["sillyc0n <137494122+sillyc0n@users.noreply.github.com>"]
 python = "^3.12"
 requests = "^2.32.3"
 tqdm = "^4.66.5"
+beautifulsoup4 = "^4.12.3"
+pandasql = "^0.7.3"
+pandas = "^2.2.3"
 
