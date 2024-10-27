@@ -7,6 +7,7 @@ on:
 
 env:
   OUTPUT_DIRECTORY: output
+  STEP01_OUTPUT: $OUTPUT_DIRECTORY/step01.csv
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 permissions:
@@ -30,9 +31,11 @@ jobs:
         poetry config virtualenvs.create false
         poetry install --no-interaction --no-ansi
     - name: Run Python script
-      run: python step01_download_hl.py $OUTPUT_DIRECTORY/step01.csv
+      run: python step01_download_hl.py $STEP01_OUTPUT
     - name: List Output
-      run: ls -l $OUTPUT_DIRECTORY
+      run: |
+        ls -l $OUTPUT_DIRECTORY
+        wc -l $STEP01_OUTPUT
     - name: Commit changes
       run: |  
         git config user.name "github-actions[bot]"
