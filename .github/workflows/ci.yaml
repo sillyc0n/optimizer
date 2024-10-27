@@ -7,7 +7,7 @@ on:
 
 env:
   OUTPUT_DIRECTORY: output
-  STEP01_OUTPUT: $OUTPUT_DIRECTORY/step01.csv
+  STEP01_OUTPUT: ${{ OUTPUT_DIRECTORY }}/step01.csv
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 permissions:
