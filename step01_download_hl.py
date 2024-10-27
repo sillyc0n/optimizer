@@ -13,6 +13,9 @@ def scrape_funds_data(csv_file):
     # chunk size for the download
     chunk = 20
 
+    # we will sleep for this number of seconds between API calls
+    sleep = 0.4
+
     # Open the CSV file in write mode
     with open(csv_file, "w", newline="") as file:
         # Create a CSV writer
@@ -71,8 +74,8 @@ def scrape_funds_data(csv_file):
                         # Update progress
                         pbar.update(chunk)
 
-                        # Add a delay for smoother animation
-                        time.sleep(0.5)
+                        # Add a delay to not hammer the API
+                        time.sleep(sleep)
                     else:
                         print("\nFailed to retrieve data from the URL:", url)
                         break
