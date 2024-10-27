@@ -7,7 +7,11 @@ import json
 
 def scrape_funds_data(csv_file):
     # URL for JSON data
-    base_url = "https://www.hl.co.uk/ajax/funds/fund-search/search?investment=&companyid=&sectorid=&wealth=&unitTypePref=&tracker=&payment_frequency=&payment_type=&yield=&standard_ocf=&perf12m=&perf36m=&perf60m=&fund_size=&num_holdings=&start={}&rpp=20&lo=0&sort=fd.full_description&sort_dir=asc"
+        
+    base_url = "https://www.hl.co.uk/ajax/funds/fund-search/search?investment=&companyid=&sectorid=&wealth=&unitTypePref=&tracker=&payment_frequency=&payment_type=&yield=&standard_ocf=&perf12m=&perf36m=&perf60m=&fund_size=&num_holdings=&start={}&rpp={}&lo=0&sort=fd.full_description&sort_dir=asc"
+    
+    # chunk size for the download
+    chunk = 20
 
     # Open the CSV file in write mode
     with open(csv_file, "w", newline="") as file:
@@ -15,7 +19,8 @@ def scrape_funds_data(csv_file):
         writer = csv.writer(file)
 
         # Get the column names from the JSON response
-        response = requests.get(base_url.format(0))
+        
+        response = requests.get(base_url.format(0, chunk))
         if response.status_code == 200:
             data = response.json()
             column_names = list(data["Results"][0].keys())
@@ -29,12 +34,12 @@ def scrape_funds_data(csv_file):
             # Counter for downloaded funds
             total_funds = 0
 
-            chunk = 20
+            
             with tqdm(total=None, desc="Downloading", unit='funds', ncols=70) as pbar:
                 # Iterate until "ResultsReturned" is 0
                 while True:
                     # Construct the URL with the current start parameter
-                    url = base_url.format(start)
+                    url = base_url.format(start, chunk)
 
                     # Send a GET request to the URL
                     response = requests.get(url)
@@ -46,7 +51,7 @@ def scrape_funds_data(csv_file):
                             data = response.json()
                         except json.decoder.JSONDecodeError:
                             print(f"\nError decoding JSON response {response}")
-                            break                        
+                            continue                        
 
                         # Extract the "Results" list from the JSON data
                         results = data["Results"]
@@ -67,7 +72,7 @@ def scrape_funds_data(csv_file):
                         pbar.update(chunk)
 
                         # Add a delay for smoother animation
-                        time.sleep(0.2)
+                        time.sleep(0.5)
                     else:
                         print("\nFailed to retrieve data from the URL:", url)
                         break
