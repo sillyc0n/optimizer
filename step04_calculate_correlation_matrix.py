@@ -14,22 +14,24 @@ json_files = [file for file in os.listdir(args.directory) if file.endswith('.jso
 # Initialize a dictionary to store 'Adj Close' values from each file
 adj_close_values = {}
 
-# Process each file
-processed = 0
-
 # Progress animation variables
 animation = "|/-\\"
-animate_index = 0
+index = 0
 
 temp_dfs = []
 
 # Process each file and extract 'Adj Close' values
 for filename in json_files:
+    print(filename)
     file_path = os.path.join(args.directory, filename)
+
+    with open('filename.txt', 'r') as file:
+        content = file.read()
+        print(content)
 
     # Read the CSV file and extract Adjusted Close
     json = pd.read_json(file_path, dtype_backend='numpy_nullable')
-
+    print(json)
     # Select the specific nested data for index and columns
     timestamp = json['chart']['result'][0]['timestamp']
     column_data = json['chart']['result'][0]['indicators']['adjclose'][0]['adjclose']
@@ -40,12 +42,11 @@ for filename in json_files:
     temp_dfs.append(temp_df)
 
     # processing finished
-    processed += 1
+    index += 1
 
     # Print progress information
-    progress = f"\rProcessing symbols... {animation[animate_index % len(animation)]} Processed: {processed}/{len(json_files)} Current symbol: {symbol}"
-    print(progress, end='')
-    animate_index += 1
+    progress = f"\rProcessing symbols... {animation[index % len(animation)]} Processed: {index}/{len(json_files)} Current symbol: {symbol}"
+    print(progress, end='')    
 
 # Combine all temporary DataFrames outside the loop
 combined_df = pd.concat(temp_dfs, axis=1, join='outer')
