@@ -2,7 +2,7 @@ import sys
 import requests
 import csv
 import time
-from tqdm import tqdm
+
 import json
 
 def scrape_funds_data(csv_file):
@@ -37,48 +37,54 @@ def scrape_funds_data(csv_file):
             # Counter for downloaded funds
             total_funds = 0
 
+            animation = "|/-\\"
+            index = 0
             
-            with tqdm(total=None, desc="Downloading", unit='funds', ncols=70) as pbar:
-                # Iterate until "ResultsReturned" is 0
-                while True:
-                    # Construct the URL with the current start parameter
-                    url = base_url.format(start, chunk)
+            # Iterate until "ResultsReturned" is 0
+            while True:
+                
+                progress = f"\rDownloading funds... {animation[index % len(animation)]} {total_funds} funds downloaded"
+                sys.stdout.write(progress)
+                sys.stdout.flush()
 
-                    # Send a GET request to the URL
-                    response = requests.get(url)
+                # Construct the URL with the current start parameter
+                url = base_url.format(start, chunk)
 
-                    # Check if the request was successful
-                    if response.status_code == 200:
-                        # Get the JSON data from the response
-                        #try:
-                        data = response.json()
-                        #except json.decoder.JSONDecodeError:
-                        #    print(f"\nError decoding JSON response {response}")
-                        #    continue                        
+                # Send a GET request to the URL
+                response = requests.get(url)
 
-                        # Extract the "Results" list from the JSON data
-                        results = data["Results"]
+                # Check if the request was successful
+                if response.status_code == 200:
+                    # Get the JSON data from the response
+                    #try:
+                    data = response.json()
+                    #except json.decoder.JSONDecodeError:
+                    #    print(f"\nError decoding JSON response {response}")
+                    #    continue                        
 
-                        # Check if there are no more results
-                        if len(results) == 0:
-                            break
+                    # Extract the "Results" list from the JSON data
+                    results = data["Results"]
 
-                        # Write each fund's data as a row in the CSV file
-                        for fund in results:
-                            writer.writerow(fund.values())
-                            total_funds += 1
-
-                        # Increment the start parameter by a chunk
-                        start += chunk                        
-
-                        # Update progress
-                        pbar.update(chunk)
-
-                        # Add a delay to not hammer the API
-                        time.sleep(sleep)
-                    else:
-                        print("\nFailed to retrieve data from the URL:", url)
+                    # Check if there are no more results
+                    if len(results) == 0:
                         break
+
+                    # Write each fund's data as a row in the CSV file
+                    for fund in results:
+                        writer.writerow(fund.values())
+                        total_funds += 1
+
+                    # Increment the start parameter by a chunk
+                    start += chunk                        
+
+                    # Update progress
+                    index += 1
+
+                    # Add a delay to not hammer the API
+                    time.sleep(sleep)
+                else:
+                    print("\nFailed to retrieve data from the URL:", url)
+                    break
 
     print("\nData has been successfully saved to", csv_file)
 
