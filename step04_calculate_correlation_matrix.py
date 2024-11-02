@@ -25,7 +25,7 @@ for filename in json_files:
     print(filename)
     file_path = os.path.join(args.directory, filename)
 
-    with open('filename.txt', 'r') as file:
+    with open(file_path, 'r') as file:
         content = file.read()
         print(content)
 
