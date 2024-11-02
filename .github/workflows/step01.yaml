@@ -40,3 +40,18 @@ jobs:
         git add -f $OUTPUT_DIRECTORY/$HL_FUNDS
         git commit -m "Automated download and commit - step01 - Download HL Funds"
         git push -f
+
+#jobs:
+#  download_and_commit:
+#    steps:
+#      # ... existing steps ...
+#      - uses: actions/github-script@v6
+#        with:
+#          github-token: ${{secrets.GITHUB_TOKEN}}
+#          script: |
+#            await github.rest.actions.createWorkflowDispatch({
+#              owner: 'owner',
+#              repo: 'repo',
+#              workflow_id: 'Step02',
+#              ref: 'main'
+#            })
