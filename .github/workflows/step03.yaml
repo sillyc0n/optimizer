@@ -1,4 +1,4 @@
-name: Step02 - Download Fidelity Risk Ratings and Commit
+name: Step03 - Download Yahoo Quotes
 
 on:
   workflow_dispatch:
