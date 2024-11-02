@@ -1,5 +1,5 @@
 import sys
-import csv
+#import csv
 import requests
 import time
 import json
@@ -56,10 +56,7 @@ else:
     print("Usage: python step02_fidelity_risk_ratings.py <input_file.csv>")
     sys.exit(1)
 
-#with open(input_file, 'r') as file:
 df = pd.read_csv(input_file)
-#df.set_index('sedol', inplace=True)
-#print(df.columns)
 
 animation = "|/-\\"
 success = 0
@@ -72,9 +69,7 @@ for sedol in df['sedol']:
     print(f"\rProcessing funds... {animation[index % len(animation)]} Fund {index}/{total_funds} Success/Failure {success}/{failure}", end='')
     sys.stdout.flush()
 
-    # print(sedol)
     investment_data = extract_data(sedol)
-    # print (investment_data)
 
     if investment_data:
         pi_url = investment_data.get('c_slugPI', None)
@@ -127,7 +122,6 @@ for sedol in df['sedol']:
                     if not property_value:
                         break
                 
-                # print(f"{property_name} = {property_value}")
                 # update dataframe
                 if property_value:
                     df.loc[df['sedol'] == sedol, f"{fidelity_prefix}_{property_name}"] = float(property_value)                

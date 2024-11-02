@@ -1,0 +1,42 @@
+name: Step02 - Download Fidelity Risk Ratings and Commit
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * 6"
+
+env:
+  HL_FUNDS: output/hl.csv
+  OUTPUT_DIRECTORY: output/quotes
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+permissions:
+  contents: write
+
+jobs:
+  download_and_commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    - name: Create output directory
+      run: |
+        mkdir -p $OUTPUT_DIRECTORY
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install poetry
+        poetry config virtualenvs.create false
+        poetry install --no-interaction --no-ansi    
+    - name: Download Yahoo Quotes
+      run: python step03_yahoo.py $HL_FUNDS $OUTPUT_DIRECTORY
+    - name: Commit Step03
+      run: |  
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git status
+        git add -f $HL_FUNDS $OUTPUT_DIRECTORY
+        git commit -m "Automated download and commit - step03 - Yahoo Quotes"
+        git push -f
