@@ -29,6 +29,9 @@ jobs:
         pip install poetry
         poetry config virtualenvs.create false
         poetry install --no-interaction --no-ansi
+    - name: Commit Step04
+      run: |  
+        ls -l $QUOTES
     - name: Calculate Correlation Matrix
       run: python step04_calculate_correlation_matrix.py $QUOTES $CM
     - name: Commit Step04
