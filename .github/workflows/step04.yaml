@@ -1,0 +1,37 @@
+name: Step04 - Correlation Matrix
+
+on:
+  workflow_dispatch:  
+
+env:
+  CM: output/cm.csv
+  QUOTES: output/quotes
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+permissions:
+  contents: write
+
+jobs:
+  download_and_commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install poetry
+        poetry config virtualenvs.create false
+        poetry install --no-interaction --no-ansi
+    - name: Calculate Correlation Matrix
+      run: python step04_calculate_correlation_matrix.py $QUOTES $CM
+    - name: Commit Step03
+      run: |  
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git status
+        git add -f $CM
+        git commit -m "Automated commit - step04 - Calculate Correlation Matrix"
+        git push -f
