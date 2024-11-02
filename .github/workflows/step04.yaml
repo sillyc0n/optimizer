@@ -27,7 +27,7 @@ jobs:
         poetry install --no-interaction --no-ansi
     - name: Calculate Correlation Matrix
       run: python step04_calculate_correlation_matrix.py $QUOTES $CM
-    - name: Commit Step03
+    - name: Commit Step04
       run: |  
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
