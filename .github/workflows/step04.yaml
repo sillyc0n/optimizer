@@ -14,11 +14,7 @@ permissions:
 jobs:
   download_and_commit:
     runs-on: ubuntu-latest
-    steps:
-    #- name: Install Git LFS
-    #  run: |
-    #    curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
-    #    sudo apt-get install git-lfs
+    steps:    
     - uses: actions/checkout@v4
       with:
         lfs: true

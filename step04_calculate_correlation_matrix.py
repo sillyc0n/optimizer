@@ -22,16 +22,11 @@ temp_dfs = []
 
 # Process each file and extract 'Adj Close' values
 for filename in json_files:
-    print(filename)
-    file_path = os.path.join(args.directory, filename)
-
-    with open(file_path, 'r') as file:
-        content = file.read()
-        print(content)
+    file_path = os.path.join(args.directory, filename)    
 
     # Read the CSV file and extract Adjusted Close
     json = pd.read_json(file_path, dtype_backend='numpy_nullable')
-    print(json)
+
     # Select the specific nested data for index and columns
     timestamp = json['chart']['result'][0]['timestamp']
     column_data = json['chart']['result'][0]['indicators']['adjclose'][0]['adjclose']
