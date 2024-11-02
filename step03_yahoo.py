@@ -7,25 +7,7 @@ import json
 import time
 import pandas as pd
 
-# Parse command-line arguments
-#parser = argparse.ArgumentParser(description='Yahoo Finance Data Extraction')
-#parser.add_argument('filename', help='CSV file containing asset information')
-#parser.add_argument('output_filename', help='Output CSV file name')
-#args = parser.parse_args()
-
-# Read CSV file and extract header
-#with open(args.filename, 'r') as file:
-#    reader = csv.reader(file)
-#    header = next(reader)
-#    data = list(reader)
-
-# Find the index of the 'sedol' column in the header
-#sedol_index = header.index('sedol')
-
-# Create a new header with the additional 'Yahoo-symbol' column
-#new_header = header + ['Yahoo-symbol']
-
-# Check if input_file and output_file were provided as command-line arguments
+# Check if input_file and output_dir were provided as command-line arguments
 if len(sys.argv) > 2:
     input_file = sys.argv[1]
     output_dir = sys.argv[2]
@@ -40,9 +22,6 @@ animation = "|/-\\"
 index = 0
 
 # Open the output file in append mode
-#with open(args.output_filename, 'w', newline='') as outfile:
-#    writer = csv.writer(outfile)
-#    writer.writerow(new_header)
 total_funds = len(df)
 print(df)
 for sedol in df['sedol']:
@@ -73,6 +52,7 @@ for sedol in df['sedol']:
     # save csv    
     df.to_csv(input_file, index=False, mode='w')
 
+    # download quotes
     period2 = int(time.time())
     period1 = period2 - (365 * 24 * 60 * 60)
 
@@ -81,18 +61,14 @@ for sedol in df['sedol']:
     
     output_filename = os.path.join(output_dir, f"{symbol}.json")
     
-    # Check if the response code is 200 (indicating a successful request)
     if response.status_code == 200:
         # Save the response to a file
         with open(output_filename, 'w') as file:
             file.write(response.text)
-        #successful += 1
-    #else:
-        #failed += 1
 
     index += 1
 
-    time.sleep(1)
+    time.sleep(0.2)
         
     # Print progress information
     progress = f"\rProcessing symbols... {animation[index % len(animation)]} Processed: {index}/{total_funds} Current symbol: {sedol}/{symbol}"
