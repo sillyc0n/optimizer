@@ -15,10 +15,10 @@ jobs:
   download_and_commit:
     runs-on: ubuntu-latest
     steps:
-    - name: Install Git LFS
-      run: |
-        curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
-        sudo apt-get install git-lfs
+    #- name: Install Git LFS
+    #  run: |
+    #    curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+    #    sudo apt-get install git-lfs
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v2
       with:
@@ -29,9 +29,6 @@ jobs:
         pip install poetry
         poetry config virtualenvs.create false
         poetry install --no-interaction --no-ansi
-    - name: Commit Step04
-      run: |  
-        ls -l $QUOTES
     - name: Calculate Correlation Matrix
       run: python step04_calculate_correlation_matrix.py $QUOTES $CM
     - name: Commit Step04
