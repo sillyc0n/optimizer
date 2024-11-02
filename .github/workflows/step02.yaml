@@ -1,9 +1,9 @@
-name: Download Fidelity Risk Ratings
+name: Step02 - Download Fidelity Risk Ratings and Commit
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 0 * * 5"
+    - cron: "0 0 * * 6"
 
 env:
   OUTPUT_DIRECTORY: output
