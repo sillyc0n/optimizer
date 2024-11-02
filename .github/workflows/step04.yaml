@@ -20,6 +20,10 @@ jobs:
     #    curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
     #    sudo apt-get install git-lfs
     - uses: actions/checkout@v4
+      with:
+        lfs: true
+    - name: Checkout LFS objects
+      run: git lfs checkout
     - uses: actions/setup-python@v2
       with:
         python-version: '3.x'
