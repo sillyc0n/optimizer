@@ -1,4 +1,4 @@
-name: Step02 - Download HL Funds and Commit
+name: Step01 - Download HL Funds and Commit
 
 on:
   workflow_dispatch:
