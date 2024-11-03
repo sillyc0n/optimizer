@@ -20,6 +20,9 @@ index = 0
 
 temp_dfs = []
 
+# TODO - this code should only consider funds in hl.csv that have quotes in json 
+# the risk is that it may calculate matrix for old funds not on hl anymore
+
 # Process each file and extract 'Adj Close' values
 for filename in json_files:
     file_path = os.path.join(args.directory, filename)    
