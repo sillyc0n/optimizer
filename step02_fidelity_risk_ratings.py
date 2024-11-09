@@ -1,7 +1,6 @@
 import sys
 #import csv
 import requests
-import time
 import json
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -83,20 +82,16 @@ for sedol in df['sedol']:
 
     # Process risk_rating_url if available
     if risk_rating_url:
-
-        if risk_rating_url:
-            df.loc[df['sedol'] == sedol, f"{fidelity_prefix}_risk_rating_url"] = risk_rating_url
-        else:
-            df.loc[df['sedol'] == sedol, f"{fidelity_prefix}_risk_rating_url"] = ''        
+        
+        df.loc[df['sedol'] == sedol, f"{fidelity_prefix}_risk_rating_url"] = risk_rating_url        
 
         response = requests.get(risk_rating_url)
     
         html_content = response.text
 
-        if html_content:
-            success += 1
-        else:
+        if not html_content:        
             failure += 1
+            continue
 
         # Extract JSON document from HTML response
         soup = BeautifulSoup(html_content, 'html.parser')
@@ -124,9 +119,14 @@ for sedol in df['sedol']:
                 
                 # update dataframe
                 if property_value:
-                    df.loc[df['sedol'] == sedol, f"{fidelity_prefix}_{property_name}"] = float(property_value)                
+                    df.loc[df['sedol'] == sedol, f"{fidelity_prefix}_{property_name}"] = float(property_value)
         
         # save the file to disk
-    df.to_csv(input_file, index=False, mode='w')
+        df.to_csv(input_file, index=False, mode='w')
+        success += 1
+    else:
+        df.loc[df['sedol'] == sedol, f"{fidelity_prefix}_risk_rating_url"] = ''
+        failure += 1
+
     index += 1
     
