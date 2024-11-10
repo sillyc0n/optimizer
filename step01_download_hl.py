@@ -16,6 +16,8 @@ def scrape_funds_data(csv_file):
     # we will sleep for this number of seconds between API calls
     sleep = 0.4
 
+    # TODO read existing csv file and update rather than override
+
     # Open the CSV file in write mode
     with open(csv_file, "w", newline="") as file:
         # Create a CSV writer

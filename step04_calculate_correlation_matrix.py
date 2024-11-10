@@ -25,8 +25,14 @@ temp_dfs = []
 
 # Process each file and extract 'Adj Close' values
 for filename in json_files:
-    file_path = os.path.join(args.directory, filename)    
+    file_path = os.path.join(args.directory, filename)
 
+    try:
+        json = pd.read_json(file_path, dtype_backend='numpy_nullable')
+    except ValueError as e:
+        print(f"Error reading {filename}: {str(e)}")
+        continue
+    
     # Read the CSV file and extract Adjusted Close
     json = pd.read_json(file_path, dtype_backend='numpy_nullable')
 
@@ -44,7 +50,7 @@ for filename in json_files:
 
     # Print progress information
     progress = f"\rProcessing symbols... {animation[index % len(animation)]} Processed: {index}/{len(json_files)} Current symbol: {symbol}"
-    print(progress, end='')    
+    print(progress, end='')
 
 print("Calculating Matrix. Please wait ...")
 
@@ -52,9 +58,6 @@ print("Calculating Matrix. Please wait ...")
 combined_df = pd.concat(temp_dfs, axis=1, join='outer')
 
 # Output the data frame to a file
-#output_file = os.path.join(args.directory, "df.csv")
-#combined_df.to_csv(output_file, index=True)
-#print(f"combined_df saved to {output_file}")
 
 # Create a DataFrame from the 'Adj Close' values
 df_adj_close = pd.DataFrame(combined_df)
