@@ -37,6 +37,7 @@ jobs:
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git status
+        ls -l output/
         git add -f $CM_7Z $CM_7Z.*
         git commit -m "Automated commit - step04 - Calculate Correlation Matrix"
         git push -f
