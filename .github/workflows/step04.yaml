@@ -30,7 +30,7 @@ jobs:
       run: python step04_calculate_correlation_matrix.py $QUOTES $CM
     - uses: edgarrc/action-7z@v1
       with:
-        args: 7z a -v50m $CM_7Z $CM        
+        args: 7z a -v50m ${{CM_7Z}} ${{CM}}
     - name: Commit Step04
       run: |  
         git config user.name "github-actions[bot]"
