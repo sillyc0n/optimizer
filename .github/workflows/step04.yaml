@@ -20,6 +20,7 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: '3.x'
+    - uses: milliewalky/setup-7-zip@v1
     - name: Install dependencies
       run: |
         pip install --upgrade pip
@@ -29,14 +30,13 @@ jobs:
     - name: Calculate Correlation Matrix
       run: python step04_calculate_correlation_matrix.py $QUOTES $CM
     - name: Compress cm.csv
-      run: |
-        choco install 7zip.install
+      run: |        
         7z a -v50m $CM_7Z $CM
     - name: Commit Step04
       run: |  
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git status
-        git add -f $CM_7Z
+        git add -f $CM_7Z $CM_7Z.*
         git commit -m "Automated commit - step04 - Calculate Correlation Matrix"
         git push -f

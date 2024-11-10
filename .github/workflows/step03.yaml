@@ -31,7 +31,9 @@ jobs:
         poetry config virtualenvs.create false
         poetry install --no-interaction --no-ansi    
     - name: Download Yahoo Quotes
-      run: python step03_yahoo.py $HL_FUNDS $OUTPUT_DIRECTORY
+      run: |
+        rm -Rf $OUTPUT_DIRECTORY/*
+        python step03_yahoo.py $HL_FUNDS $OUTPUT_DIRECTORY
     - name: Commit Step03
       run: |  
         git config user.name "github-actions[bot]"
