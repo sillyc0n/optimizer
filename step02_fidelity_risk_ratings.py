@@ -121,6 +121,10 @@ for sedol in df['sedol']:
                 if property_value:
                     df.loc[df['sedol'] == sedol, f"{fidelity_prefix}_{property_name}"] = float(property_value)
         
+        # TODO - check growth_chart
+        # https://www.fidelity.co.uk/factsheet-data/factsheet/GB00B5TX5Q59-axa-us-short-duration-hi-yld-gross-z-inc/growth-chart
+        # for morningrise api calls https://lt.morningstar.com/api/rest.svc/timeseries_price/9vehuxllxs?currencyId=GBP&endDate=2024-11-08&forwardFill=true&frequency=monthly&id=F00000HL9Z&idType=Morningstar&outputType=json&startDate=1900-01-01
+
         # save the file to disk
         df.to_csv(input_file, index=False, mode='w')
         success += 1
