@@ -19,8 +19,7 @@ jobs:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v2
       with:
-        python-version: '3.x'
-    - uses: milliewalky/setup-7-zip@v1
+        python-version: '3.x'    
     - name: Install dependencies
       run: |
         pip install --upgrade pip
@@ -29,9 +28,9 @@ jobs:
         poetry install --no-interaction --no-ansi
     - name: Calculate Correlation Matrix
       run: python step04_calculate_correlation_matrix.py $QUOTES $CM
-    - name: Compress cm.csv
-      run: |        
-        7z a -v50m $CM_7Z $CM
+    - uses: edgarrc/action-7z@v1
+      with:
+        args: 7z a -v50m $CM_7Z $CM        
     - name: Commit Step04
       run: |  
         git config user.name "github-actions[bot]"
