@@ -31,7 +31,7 @@ jobs:
     - uses: edgarrc/action-7z@v1
     - name: 7zip
       run: |
-        ls -l output/
+        rm -Rf $CM_7Z.*
         7z a -v50m $CM_7Z $CM
     - name: Commit Step04
       run: |  
