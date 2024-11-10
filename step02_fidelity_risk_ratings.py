@@ -102,11 +102,18 @@ for sedol in df['sedol']:
 
             risk_measures = {}
             if json_data:
-                try:
+                try:                
                     json_object = json.loads(json_data)
+                    
                     risk_measures = json_object['props']['pageProps']['initialState']['fund']['riskAndRating']['riskMeasures']
+
+                    df.loc[df['sedol'] == sedol, "isin"] = json_object['props']['pageProps']['initialState']['fund']['isin']
+                    df.loc[df['sedol'] == sedol, "msid"] = json_object['props']['pageProps']['initialState']['fund']['fundData']['msid']
+                    df.loc[df['sedol'] == sedol, "fund_code_value"] = json_object['props']['pageProps']['initialState']['fund']['fundData']['fundCodeValue']
                 except (json.JSONDecodeError, KeyError):
-                    print(f"Failed to extract risk measures from URL: {risk_rating_url}")            
+                    print(f"Failed to extract data from URL: {risk_rating_url}")
+
+            
 
             # Extract and append the properties to the row
             for property_name in properties_to_extract:
@@ -121,9 +128,11 @@ for sedol in df['sedol']:
                 if property_value:
                     df.loc[df['sedol'] == sedol, f"{fidelity_prefix}_{property_name}"] = float(property_value)
         
+
         # TODO - check growth_chart
         # https://www.fidelity.co.uk/factsheet-data/factsheet/GB00B5TX5Q59-axa-us-short-duration-hi-yld-gross-z-inc/growth-chart
         # for morningrise api calls https://lt.morningstar.com/api/rest.svc/timeseries_price/9vehuxllxs?currencyId=GBP&endDate=2024-11-08&forwardFill=true&frequency=monthly&id=F00000HL9Z&idType=Morningstar&outputType=json&startDate=1900-01-01
+        # https://developer.morningstar.com/direct-web-services/api-visualization-library/api-visualization-library/api-visualization-library/page?path=%2Fdocs%2Fcomponents-performance-graph-time-series--story-details
 
         # save the file to disk
         df.to_csv(input_file, index=False, mode='w')
