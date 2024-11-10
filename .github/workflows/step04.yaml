@@ -5,6 +5,7 @@ on:
 
 env:
   CM: output/cm.csv
+  CM_7Z: output/cm.7z
   QUOTES: output/quotes
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -27,11 +28,15 @@ jobs:
         poetry install --no-interaction --no-ansi
     - name: Calculate Correlation Matrix
       run: python step04_calculate_correlation_matrix.py $QUOTES $CM
+    - name: Compress cm.csv
+      run: |
+        choco install 7zip.install
+        7z a -v50m $CM_7Z $CM
     - name: Commit Step04
       run: |  
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git status
-        git add -f $CM
+        git add -f $CM_7Z
         git commit -m "Automated commit - step04 - Calculate Correlation Matrix"
         git push -f

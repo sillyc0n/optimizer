@@ -46,6 +46,8 @@ for filename in json_files:
     progress = f"\rProcessing symbols... {animation[index % len(animation)]} Processed: {index}/{len(json_files)} Current symbol: {symbol}"
     print(progress, end='')    
 
+print("Calculating Matrix. Please wait ...")
+
 # Combine all temporary DataFrames outside the loop
 combined_df = pd.concat(temp_dfs, axis=1, join='outer')
 
