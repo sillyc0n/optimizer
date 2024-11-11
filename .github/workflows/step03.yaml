@@ -2,6 +2,12 @@ name: Step03 - Download Yahoo Quotes
 
 on:
   workflow_dispatch:
+    inputs:
+      PURGE_QUOTES:
+        description: 'Purge existing quotes?'
+        required: false
+        default: 'false'
+
   schedule:
     - cron: "0 5 * * 6"
 
@@ -32,7 +38,7 @@ jobs:
         poetry install --no-interaction --no-ansi    
     - name: Download Yahoo Quotes
       env:
-        PURGE_QUOTES: ${{ github.event.inputs.PURGE_QUOTES || 'false' }}
+        PURGE_QUOTES: ${{ github.event.inputs.PURGE_QUOTES }}
       run: |
         if [ "$PURGE_QUOTES" = "true" ]; then
           rm -rf $OUTPUT_DIRECTORY/*
