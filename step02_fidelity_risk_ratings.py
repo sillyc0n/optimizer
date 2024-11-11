@@ -104,7 +104,7 @@ for sedol in df['sedol']:
             if json_data:
                 try:                
                     json_object = json.loads(json_data)
-                    
+                    # TODO - check if this is correct, some funds have repeated data
                     risk_measures = json_object['props']['pageProps']['initialState']['fund']['riskAndRating']['riskMeasures']
 
                     df.loc[df['sedol'] == sedol, "isin"] = json_object['props']['pageProps']['initialState']['fund']['isin']

@@ -31,8 +31,12 @@ jobs:
         poetry config virtualenvs.create false
         poetry install --no-interaction --no-ansi    
     - name: Download Yahoo Quotes
+      env:
+        PURGE_QUOTES: ${{ github.event.inputs.PURGE_QUOTES || 'false' }}
       run: |
-        rm -Rf $OUTPUT_DIRECTORY/*
+        if [ "$PURGE_QUOTES" = "true" ]; then
+          rm -rf $OUTPUT_DIRECTORY/*
+        fi
         python step03_yahoo.py $HL_FUNDS $OUTPUT_DIRECTORY
     - name: Commit Step03
       run: |  
