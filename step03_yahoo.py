@@ -1,11 +1,11 @@
 import argparse
 import os
 import sys
-#import csv
 import requests
 import json
 import time
 import pandas as pd
+import numpy as np
 
 # Check if input_file and output_dir were provided as command-line arguments
 if len(sys.argv) > 2:
@@ -16,6 +16,7 @@ else:
     sys.exit(1)
 
 df = pd.read_csv(input_file, dtype={'yahoo_symbol': str})
+df = df.replace({np.nan: None})
 
 # Progress animation variables
 animation = "|/-\\"
@@ -29,8 +30,8 @@ headers = {
 }
 
 total_funds = len(df)
-for sedol in df['sedol']:
-         
+for sedol in df['sedol']:    
+
     symbol = df.loc[df['sedol'] == sedol, "yahoo_symbol"].iloc[0]
 
     # get the symbol if not there
@@ -77,7 +78,7 @@ for sedol in df['sedol']:
     else:
         print(f"No Yahoo Symbol for sedol: {sedol} url {url}")
 
-    index += 1    
+    index += 1
         
     # Print progress information
     progress = f"\rProcessing symbols... {animation[index % len(animation)]} Processed: {index}/{total_funds} | Has Yahoo Symbol: {has_yahoo_symbol} | Has Yahoo Quotes: {has_yahoo_quotes} | Current symbol: {sedol}/{symbol}"
