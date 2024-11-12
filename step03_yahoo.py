@@ -58,7 +58,8 @@ for sedol in df['sedol']:
             df.loc[df['sedol'] == sedol, "yahoo_symbol"] = symbol
             # save csv    
             df.to_csv(input_file, index=False, mode='w')
-
+        else:
+            print(f"No Yahoo Symbol for sedol: {sedol} url {url}")
     # get the quotes
     if symbol:
         has_yahoo_symbol += 1
@@ -71,15 +72,15 @@ for sedol in df['sedol']:
         response = requests.get(url, headers=headers)
     
         if response.status_code == 200:
+            df.loc[df['sedol'] == sedol, "yahoo_quotes"] = True
             has_yahoo_quotes += 1
             # Save the response to a file
             output_filename = os.path.join(output_dir, f"{symbol}.json")
             with open(output_filename, 'w') as file:
                 file.write(response.text)
         else:
+            df.loc[df['sedol'] == sedol, "yahoo_quotes"] = False
             print(f"No Yahoo Quotes for yahoo symbol: {symbol} url: {url}")
-    else:
-        print(f"No Yahoo Symbol for sedol: {sedol} url {url}")
 
     index += 1
         
