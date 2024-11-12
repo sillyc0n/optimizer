@@ -38,7 +38,7 @@ for sedol in df['sedol']:
         symbol = None
 
     # get the symbol if not there
-    if not symbol:
+    if not symbol or pd.isna(symbol):
         time.sleep(0.5)
         # Make the API call to Yahoo Finance
         url = f"https://query1.finance.yahoo.com/v1/finance/search?q={sedol}&lang=en-GB&region=GB&quotesCount=6&newsCount=4&enableFuzzyQuery=false&quotesQueryId=tss_match_phrase_query&multiQuoteQueryId=multi_quote_single_token_query&newsQueryId=news_cie_vespa&enableCb=true&enableNavLinks=true&enableEnhancedTrivialQuery=true&enableCulturalAssets=true&enableLogoUrl=true"
