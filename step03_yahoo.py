@@ -32,7 +32,10 @@ headers = {
 total_funds = len(df)
 for sedol in df['sedol']:    
 
-    symbol = df.loc[df['sedol'] == sedol, "yahoo_symbol"].iloc[0]
+    if 'yahoo_symbol' in df.columns:
+        symbol = df.loc[df['sedol'] == sedol, "yahoo_symbol"].iloc[0]
+    else:
+        symbol = None
 
     # get the symbol if not there
     if not symbol:
