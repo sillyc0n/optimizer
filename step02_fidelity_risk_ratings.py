@@ -33,7 +33,7 @@ fidelity_prefix = 'fidelity'
 
 def extract_data(sedol):
     url = f"https://liveapi.yext.com/v2/accounts/me/answers/query?input={sedol}&experienceKey=fidelity-personal-investing-pi&api_key=44cc9a622358e7951c5ca3def99e2e0a&v=20220511&version=PRODUCTION&limit=%7B%22promotions%22%3A1%2C%22faqs%22%3A4%2C%22guidanceadvice_pi%22%3A4%2C%22investments%22%3A4%2C%22links%22%3A4%2C%22news%22%3A4%2C%22products%22%3A3%7D&locale=en_GB&sessionTrackingEnabled=false&referrerPageUrl=https%3A%2F%2Fwww.fidelity.co.uk%2F&source=STANDARD&jsLibVersion=v1.14.3"
-    investment_data = {}
+    investment_data = None
 
     try:
         response = requests.get(url)
@@ -43,8 +43,6 @@ def extract_data(sedol):
 
     if json_data and 'response' in json_data and 'modules' in json_data['response'] and isinstance(json_data['response']['modules'], list) and len(json_data['response']['modules']) > 0 and isinstance(json_data['response']['modules'][0], dict) and 'results' in json_data['response']['modules'][0] and isinstance(json_data['response']['modules'][0]['results'], list) and len(json_data['response']['modules'][0]['results']) > 0 and isinstance(json_data['response']['modules'][0]['results'][0], dict) and 'data' in json_data['response']['modules'][0]['results'][0]:
         investment_data = json_data['response']['modules'][0]['results'][0]['data']
-    else:
-        investment_data = None
 
     return investment_data
 
@@ -69,19 +67,20 @@ for sedol in df['sedol']:
     sys.stdout.flush()
 
     investment_data = extract_data(sedol)
-
+    pi_url  = None
+    c_isin = None
+    risk_rating_url = None
+    
     if investment_data:
         pi_url = investment_data.get('c_slugPI', None)
         c_isin = investment_data.get('c_isin', '')
-
+        df.loc[df['sedol'] == sedol, "c_isin"] = c_isin
+    
     if pi_url:
-        risk_rating_url = pi_url.replace('key-statistics', 'risk-and-rating')        
-    else:        
-        c_isin = ''
-        risk_rating_url = ''
+        risk_rating_url = pi_url.replace('key-statistics', 'risk-and-rating')
 
     # Process risk_rating_url if available
-    if risk_rating_url:
+    if risk_rating_url != None:
         
         df.loc[df['sedol'] == sedol, f"{fidelity_prefix}_risk_rating_url"] = risk_rating_url        
 
