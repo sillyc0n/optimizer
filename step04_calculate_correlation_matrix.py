@@ -49,8 +49,10 @@ for filename in json_files:
     index += 1
 
     # Print progress information
-    progress = f"\rProcessing symbols... {animation[index % len(animation)]} Processed: {index}/{len(json_files)} Current symbol: {symbol}"
+    progress = f"\rReading symbols... {animation[index % len(animation)]} Read: {index}/{len(json_files)} Current symbol: {symbol}"
     print(progress, end='')
+
+
 
 print("Calculating Matrix. Please wait ...")
 
