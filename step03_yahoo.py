@@ -53,15 +53,16 @@ for sedol in df['sedol']:
                 # Extract the symbol from the JSON response
                 symbol = json_data['quotes'][0].get('symbol', None)
     
-        if symbol:
+        if symbol != None:
             # Add the symbol to the row or reset it to blank
             df.loc[df['sedol'] == sedol, "yahoo_symbol"] = symbol
             # save csv    
             df.to_csv(input_file, index=False, mode='w')
         else:
             print(f"No Yahoo Symbol for sedol: {sedol} url {url}")
+
     # get the quotes
-    if symbol:
+    if symbol != None:
         has_yahoo_symbol += 1
         # download quotes
         period2 = int(time.time())
@@ -70,7 +71,7 @@ for sedol in df['sedol']:
         time.sleep(0.5)
         url = f"https://query2.finance.yahoo.com/v8/finance/chart/{symbol}?period1={period1}&period2={period2}&interval=1d&includePrePost=true&events=div%7Csplit%7Cearn&&lang=en-GB&region=GB"
         response = requests.get(url, headers=headers)
-    
+        
         if response.status_code == 200:
             df.loc[df['sedol'] == sedol, "yahoo_quotes"] = True
             has_yahoo_quotes += 1
@@ -81,6 +82,9 @@ for sedol in df['sedol']:
         else:
             df.loc[df['sedol'] == sedol, "yahoo_quotes"] = False
             print(f"No Yahoo Quotes for yahoo symbol: {symbol} url: {url}")
+    else:
+        df.loc[df['sedol'] == sedol, "yahoo_quotes"] = False
+        print(f"No Yahoo Quotes for yahoo symbol: {symbol} url: {url}")
 
     index += 1
         

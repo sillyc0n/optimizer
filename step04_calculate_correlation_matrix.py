@@ -1,11 +1,15 @@
 import argparse
 import os
 import pandas as pd
+import math
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(description='Calculate Correlation Matrix for CSV Files')
 parser.add_argument('directory', help='Directory containing CSV files with quotes from Yahoo')
 parser.add_argument('correlation_csv', help='Output filename for correlation matrix CSV file')
+parser.add_argument('--output', help='Output filename for combined data CSV file (default: combined_data.csv)')
+#args.output = args.output or 'combined_data.csv'
+
 args = parser.parse_args()
 
 # Get the list of CSV files in the specified directory
@@ -37,7 +41,10 @@ for filename in json_files:
     json = pd.read_json(file_path, dtype_backend='numpy_nullable')
 
     # Select the specific nested data for index and columns
-    timestamp = json['chart']['result'][0]['timestamp']
+    #timestamp = json['chart']['result'][0]['timestamp']
+    timestamp = [math.floor(t / 86400) * 86400 for t in json['chart']['result'][0]['timestamp']]
+
+
     column_data = json['chart']['result'][0]['indicators']['adjclose'][0]['adjclose']
     symbol = json['chart']['result'][0]['meta']['symbol']
 
@@ -53,11 +60,14 @@ for filename in json_files:
     print(progress, end='')
 
 
-
-print("Calculating Matrix. Please wait ...")
+print("\nCalculating Matrix. Please wait ...")
 
 # Combine all temporary DataFrames outside the loop
 combined_df = pd.concat(temp_dfs, axis=1, join='outer')
+
+if args.output:
+    print(f"Saving combined_data CSV to: {args.output}")
+    combined_df.to_csv(args.output, index=True)
 
 # Output the data frame to a file
 
