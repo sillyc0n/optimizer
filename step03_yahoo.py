@@ -6,6 +6,8 @@ import json
 import time
 import pandas as pd
 import numpy as np
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
 
 # Check if input_file and output_dir were provided as command-line arguments
 if len(sys.argv) > 2:
@@ -70,7 +72,15 @@ for sedol in df['sedol']:
 
         time.sleep(0.5)
         url = f"https://query2.finance.yahoo.com/v8/finance/chart/{symbol}?period1={period1}&period2={period2}&interval=1d&includePrePost=true&events=div%7Csplit%7Cearn&&lang=en-GB&region=GB"
-        response = requests.get(url, headers=headers)
+
+        session = requests.Session()
+        retries = Retry(total=5, backoff_factor=1)
+        adapter = HTTPAdapter(max_retries=retries)
+        session.mount('http://', adapter)
+        session.mount('https://', adapter)
+
+        response = session.get(url, headers=headers)
+        #response = requests.get(url, headers=headers)
         
         if response.status_code == 200:
             df.loc[df['sedol'] == sedol, "yahoo_quotes"] = True
