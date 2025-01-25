@@ -1,0 +1,66 @@
+name: Steps 1-4 Download HL Funds, Fidelity Risk Ratings and Yahoo Quotes
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * 5"
+
+env:
+  OUTPUT_DIRECTORY: output
+  HL_FUNDS: hl.csv
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+permissions:
+  contents: write
+
+jobs:
+  download_hl_funds_and_commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    - name: Create output directory
+      run: |
+        mkdir -p $OUTPUT_DIRECTORY
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install poetry
+        poetry config virtualenvs.create false
+        poetry install --no-interaction --no-ansi --no-root
+    - name: Configure GIT
+      run: |  
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+    - name: Download HL Funds
+      run: python step01_download_hl.py $OUTPUT_DIRECTORY/$HL_FUNDS
+    - name: Commit Step01
+      run: |          
+        git status
+        git add -f $OUTPUT_DIRECTORY/$HL_FUNDS
+        git commit -m "Automated download and commit - step01 - Download HL Funds"
+        git push -f  
+    - name: Download Fidelity Risk Ratings
+      run: python step02_fidelity_risk_ratings.py $OUTPUT_DIRECTORY/$HL_FUNDS
+    - name: Commit Step02
+      run: |  
+        git status
+        git add -f $OUTPUT_DIRECTORY/$HL_FUNDS
+        git commit -m "Automated download and commit - step02 - Download Fidelity Risk Ratings"
+        git push -f
+    - name: Download Yahoo Quotes
+      env:
+        PURGE_QUOTES: ${{ github.event.inputs.PURGE_QUOTES }}
+      run: |
+        if [ "$PURGE_QUOTES" = "true" ]; then
+          rm -rf $OUTPUT_DIRECTORY/*
+        fi
+        python step03_yahoo.py $HL_FUNDS $OUTPUT_DIRECTORY
+    - name: Commit Step03
+      run: |  
+        git status
+        git add -f $HL_FUNDS $OUTPUT_DIRECTORY
+        git commit -m "Automated download and commit - step03 - Yahoo Quotes"
+        git push -f    
