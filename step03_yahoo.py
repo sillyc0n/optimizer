@@ -73,7 +73,7 @@ for sedol in df['sedol']:
         time.sleep(0.5)
         url = f"https://query2.finance.yahoo.com/v8/finance/chart/{symbol}?period1={period1}&period2={period2}&interval=1d&includePrePost=true&events=div%7Csplit%7Cearn&&lang=en-GB&region=GB"
         
-        @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
+        @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1.5, min=4, max=100))
         def safe_get_request(url, headers):
             response = requests.get(url, headers=headers)
             response.raise_for_status()
