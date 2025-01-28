@@ -2,8 +2,8 @@ name: Steps 1-4 Download HL Funds, Fidelity Risk Ratings and Yahoo Quotes
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 0 * * 5"
+#  schedule:
+#    - cron: "0 0 * * 5"
 
 env:
   OUTPUT_DIRECTORY: output
