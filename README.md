@@ -1,5 +1,5 @@
 # Optimizer
-
+WARNING: The information and tools provided in this repository are for educational purposes only. Investing in financial markets involves significant risks. Past performance does not guarantee future results. Always conduct thorough research and consider consulting with a financial advisor before making investment decisions. Use the information and tools at your own risk.
 
 ## Description
 Query hl.co.uk funds and optimize your portfolio.
@@ -41,27 +41,28 @@ TBD
 SQL queries allow to identify historically top-performing funds across various criteria. They can find funds with high Sharpe ratios, strong income potential, and low charges. 
 Select based on criteria below or write your own to reflect your investment strategy.
 
-## Top 15 funds with annual charge < 0.5 ordered by one-year Sharpe ratio
+## Select top performers by various criteria
+### Top 15 funds with annual charge < 0.5 ordered by one-year Sharpe ratio
 python query_by_sql.py output/hl.csv output/cm.csv 'SELECT sedol, citicode, full_description, annual_charge, Wealth150, fidelity_sharpeRatios_oneYear, fidelity_sharpeRatios_threeYear FROM hl_csv
 WHERE annual_charge < 0.5 ORDER BY fidelity_sharpeRatios_oneYear DESC LIMIT 15'
 
-## Top 15 Wealth150 funds with annual charge < 0.5 ordered by one-year Sharpe ratio
+### Top 15 Wealth150 funds with annual charge < 0.5 ordered by one-year Sharpe ratio
 python query_by_sql.py output/hl.csv output/cm.csv 'SELECT sedol, citicode, full_description, annual_charge, Wealth150, distribution_yield, underlying_yield, gross_yield, gross_running_yield, fidelity_sharpeRatios_oneYear, fidelity_sharpeRatios_threeYear FROM hl_csv
 WHERE annual_charge < 0.5 and Wealth150=1 ORDER BY fidelity_sharpeRatios_oneYear DESC LIMIT 15'
 
-## Top 15 Wealth150 funds with annual charge < 0.5 ordered by distribution yield
+### Top 15 Wealth150 funds with annual charge < 0.5 ordered by distribution yield
 python query_by_sql.py output/hl.csv output/cm.csv 'SELECT sedol, citicode, full_description, annual_charge, Wealth150, distribution_yield, underlying_yield, gross_yield, gross_running_yield, fidelity_sharpeRatios_oneYear, fidelity_sharpeRatios_threeYear FROM hl_csv WHERE annual_charge < 0.5 and Wealth150=1 ORDER BY distribution_yield DESC LIMIT 15'
 
-## Top 15 funds with annual charge < 0.5 ordered by running_yield
+### Top 15 funds with annual charge < 0.5 ordered by running_yield
 python query_by_sql.py output/hl.csv output/cm.csv 'SELECT sedol, citicode, full_description, annual_charge, Wealth150, distribution_yield, underlying_yield, gross_yield, gross_running_yield, fidelity_sharpeRatios_oneYear, fidelity_sharpeRatios_threeYear FROM hl_csv WHERE annual_charge < 0.5 ORDER BY running_yield DESC LIMIT 15'
 
-## Top 15 Income funds with annual_charge < 0.5 ordered by running_yield
+### Top 15 Income funds with annual_charge < 0.5 ordered by running_yield
 python query_by_sql.py output/hl.csv output/cm.csv "SELECT sedol, citicode, full_description, annual_charge, Wealth150, distribution_yield, underlying_yield, gross_yield, gross_running_yield, fidelity_sharpeRatios_oneYear, fidelity_sharpeRatios_threeYear FROM hl_csv WHERE annual_charge < 0.5 and unit_type='Income' ORDER BY running_yield DESC LIMIT 15"
 
-## Top 15 Wealth150 funds ordered by fidelity_sharpeRatios_oneYear
+### Top 15 Wealth150 funds ordered by fidelity_sharpeRatios_oneYear
 python query_by_sql.py output/hl.csv output/cm.csv "SELECT sedol, citicode, full_description, annual_charge, Wealth150, distribution_yield, underlying_yield, gross_yield, gross_running_yield, fidelity_sharpeRatios_oneYear, fidelity_sharpeRatios_threeYear FROM hl_csv WHERE Wealth150=1 ORDER BY fidelity_sharpeRatios_oneYear DESC LIMIT 15"
 
-## Top 15 Wealth150 funds ordered by gross_running_yield
+### Top 15 Wealth150 funds ordered by gross_running_yield
 python query_by_sql.py output/hl.csv output/cm.csv "SELECT sedol, citicode, full_description, annual_charge, Wealth150, distribution_yield, underlying_yield, gross_yield, gross_running_yield, fidelity_sharpeRatios_oneYear, fidelity_sharpeRatios_threeYear FROM hl_csv WHERE Wealth150=1 ORDER BY gross_running_yield DESC LIMIT 15"
 
 ## License
