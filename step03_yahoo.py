@@ -75,9 +75,16 @@ for sedol in df['sedol']:
         
         @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1.5, min=4, max=100))
         def safe_get_request(url, headers):
-            response = requests.get(url, headers=headers)
-            response.raise_for_status()
-            return response
+            try:
+                response = requests.get(url, headers=headers)
+                response.raise_for_status()
+                return response
+            except requests.exceptions.RequestException as e:
+                if isinstance(e, requests.exceptions.HTTPError):
+                    print(f"HTTP Error: {e}")
+                else:
+                    print(f"Other error: {e}")
+                raise
         
         try:
             response = safe_get_request(url, headers)
