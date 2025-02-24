@@ -6,6 +6,7 @@ import json
 import time
 import pandas as pd
 import numpy as np
+import random
 import requests
 from tenacity import retry, wait_fixed, wait_exponential, stop_after_attempt
 
@@ -41,7 +42,8 @@ for sedol in df['sedol']:
 
     # get the symbol if not there
     if not symbol or pd.isna(symbol):
-        time.sleep(0.5)
+        delay = np.random.normal(0.75, 0.5)
+        time.sleep(delay)
         # Make the API call to Yahoo Finance
         url = f"https://query1.finance.yahoo.com/v1/finance/search?q={sedol}&lang=en-GB&region=GB&quotesCount=6&newsCount=4&enableFuzzyQuery=false&quotesQueryId=tss_match_phrase_query&multiQuoteQueryId=multi_quote_single_token_query&newsQueryId=news_cie_vespa&enableCb=true&enableNavLinks=true&enableEnhancedTrivialQuery=true&enableCulturalAssets=true&enableLogoUrl=true"
         response = requests.get(url, headers=headers)
