@@ -81,7 +81,7 @@ for sedol in df['sedol']:
         time.sleep(0.5)
         url = f"https://query2.finance.yahoo.com/v8/finance/chart/{symbol}?period1={period1}&period2={period2}&interval=1d&includePrePost=true&events=div%7Csplit%7Cearn&&lang=en-GB&region=GB"
         
-        @retry(stop=stop_after_attempt(20), wait=wait_exponential(multiplier=2.5, min=4, max=100000))
+        @retry(stop=stop_after_attempt(10), wait=wait_exponential(multiplier=2.5, min=4, max=10000))
         def safe_get_request(url, headers):
             try:
                 response = requests.get(url, headers=headers)
@@ -92,12 +92,14 @@ for sedol in df['sedol']:
                     print(f"HTTP Error: {e}")
                 else:
                     print(f"Other error: {e}")
-                raise
+                return None
         
         try:
             response = safe_get_request(url, headers)
         except requests.exceptions.RequestException as e:
             print(f'Failed after retrying: {e}')
+        except NameError:
+            pass
         
         if response.status_code == 200:
             df.loc[df['sedol'] == sedol, "yahoo_quotes"] = True
