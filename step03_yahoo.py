@@ -30,6 +30,7 @@ animation = "|/-\\"
 index = 0
 has_yahoo_quotes = 0
 has_yahoo_symbol = 0
+last_error  = None
 
 # Set the headers for the API request
 headers = {
@@ -55,12 +56,11 @@ if 'yahoo_symbol' not in df.columns:
 for sedol, symbol, yahoo_timestamp in zip(df['sedol'], df["yahoo_symbol"], df['yahoo_timestamp']):
     # Print progress information
     index += 1
-    progress = f"\rProcessing symbols... {animation[index % len(animation)]} Processed: {index}/{total_funds} | Has Yahoo Symbol: {has_yahoo_symbol} | Has Yahoo Quotes: {has_yahoo_quotes} | Current symbol: {sedol}/{symbol}"
+    progress = f"\rProcessing symbols... {animation[index % len(animation)]} Processed: {index}/{total_funds} | Has Yahoo Symbol: {has_yahoo_symbol} | Has Yahoo Quotes: {has_yahoo_quotes} | Current symbol: {sedol}/{symbol} | Last Error: {last_error}"    
     print(progress, end='')
     sys.stdout.flush()
 
-    # skip making query for yahoo quotes if what we have has been fetched within 24h
-    # print(f"yahoo_symbol: {symbol} yahoo_timestamp: {yahoo_timestamp}, time.time(): {int(time.time())}, {yahoo_timestamp < int(time.time()) - DAY_IN_SECONDS}\n")
+    # do not query yahoo quotes if what we have fetched within the last 24h    
     now = int(time.time())
     if yahoo_timestamp is not None and now - int(yahoo_timestamp) < DAY_IN_SECONDS:
         continue
@@ -83,12 +83,12 @@ for sedol, symbol, yahoo_timestamp in zip(df['sedol'], df["yahoo_symbol"], df['y
                 symbol = json_data['quotes'][0].get('symbol', None)
     
         if symbol != None and not pd.isna(symbol):
-            # Add the symbol to the row or reset it to blank
+            # Add the symbol to the row
             df.loc[df['sedol'] == sedol, "yahoo_symbol"] = symbol
-            # save csv    
+            # save the input csv file  
             df.to_csv(input_file, index=False, mode='w')
         else:
-            print(f"No Yahoo Symbol for sedol: {sedol} url {url}")
+            last_error = f"No Yahoo symbol for sedol: {sedol}"
 
     # get the quotes
     if symbol != None and not pd.isna(symbol):
@@ -117,17 +117,21 @@ for sedol, symbol, yahoo_timestamp in zip(df['sedol'], df["yahoo_symbol"], df['y
         except NameError:
             pass
         
-        if response is not None and response.status_code == 200:
-            df.loc[df['sedol'] == sedol, "yahoo_timestamp"] = int(time.time())
-            has_yahoo_quotes += 1
+        if response is not None and response.status_code == 200:        
             # Save the response to a file
             output_filename = os.path.join(output_dir, f"{symbol}.json")
             with open(output_filename, 'w') as file:
                 file.write(response.text)
-        else:            
-            print(f"No Yahoo Quotes for yahoo symbol: {symbol} url: {url}")
-    else:        
-        print(f"No Yahoo Quotes for yahoo symbol: {symbol} url: {url}")
+            
+            # update the timestamp
+            df.loc[df['sedol'] == sedol, "yahoo_timestamp"] = int(time.time())            
+            # save the input csv file
+            df.to_csv(input_file, index=False, mode='w')
+
+            # increase the counter
+            has_yahoo_quotes += 1
+        else:
+            last_error = f"No quotes for yahoo symbol: {symbol}"
         
 # Print completion message
 completion_message = f"\nOutput saved to {input_file}"
