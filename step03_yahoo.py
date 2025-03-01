@@ -92,7 +92,7 @@ for sedol in df['sedol']:
                     print(f"HTTP Error: {e}")
                 else:
                     print(f"Other error: {e}")
-                return None
+                raise
         
         try:
             response = safe_get_request(url, headers)
@@ -101,7 +101,7 @@ for sedol in df['sedol']:
         except NameError:
             pass
         
-        if response.status_code == 200:
+        if response is not None and response.status_code == 200:
             df.loc[df['sedol'] == sedol, "yahoo_quotes"] = True
             has_yahoo_quotes += 1
             # Save the response to a file
