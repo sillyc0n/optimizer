@@ -10,6 +10,10 @@ import random
 import requests
 from tenacity import retry, wait_fixed, wait_exponential, stop_after_attempt
 
+# constants
+HOUR_IN_SECONDS = 3600
+DAY_IN_SECONDS = HOUR_IN_SECONDS * 24
+
 # Check if input_file and output_dir were provided as command-line arguments
 if len(sys.argv) > 2:
     input_file = sys.argv[1]
@@ -39,7 +43,11 @@ def positive_delay():
             return delay
 
 total_funds = len(df)
-for sedol in df['sedol']:    
+for sedol in df['sedol']:
+
+    # skip making query for yahoo quotes if what we have has been fetched within 24h
+    if pd.notnull(df.loc[sedol, 'yahoo_timestamp']) and df.loc[sedol, 'yahoo_timestamp'] < time.time() - DAY_IN_SECONDS:
+        continue
 
     if 'yahoo_symbol' in df.columns:
         symbol = df.loc[df['sedol'] == sedol, "yahoo_symbol"].iloc[0]
@@ -87,12 +95,9 @@ for sedol in df['sedol']:
                 response = requests.get(url, headers=headers)
                 response.raise_for_status()
                 return response
-            except requests.exceptions.RequestException as e:
-                if isinstance(e, requests.exceptions.HTTPError):
-                    print(f"HTTP Error: {e}")
-                else:
-                    print(f"Other error: {e}")
-                raise
+            except (requests.exceptions.RequestException, requests.exceptions.HTTPError) as e:
+                print(f"Error fetching data: {str(e)}")
+                return None
         
         try:
             response = safe_get_request(url, headers)
@@ -102,17 +107,15 @@ for sedol in df['sedol']:
             pass
         
         if response is not None and response.status_code == 200:
-            df.loc[df['sedol'] == sedol, "yahoo_quotes"] = True
+            df.loc[df['sedol'] == sedol, "yahoo_timestamp"] = int(time.time())
             has_yahoo_quotes += 1
             # Save the response to a file
             output_filename = os.path.join(output_dir, f"{symbol}.json")
             with open(output_filename, 'w') as file:
                 file.write(response.text)
-        else:
-            df.loc[df['sedol'] == sedol, "yahoo_quotes"] = False
+        else:            
             print(f"No Yahoo Quotes for yahoo symbol: {symbol} url: {url}")
-    else:
-        df.loc[df['sedol'] == sedol, "yahoo_quotes"] = False
+    else:        
         print(f"No Yahoo Quotes for yahoo symbol: {symbol} url: {url}")
 
     index += 1
