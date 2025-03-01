@@ -50,7 +50,7 @@ if 'yahoo_timestamp' not in df.columns:
 if 'yahoo_symbol' not in df.columns:
     df["yahoo_symbol"] = None
 
-df['yahoo_timestamp'] = pd.to_datetime(df['yahoo_timestamp']).astype(int)
+#df['yahoo_timestamp'] = pd.to_datetime(df['yahoo_timestamp']).astype(int)
 
 for sedol, symbol, yahoo_timestamp in zip(df['sedol'], df["yahoo_symbol"], df['yahoo_timestamp']):
     # Print progress information
