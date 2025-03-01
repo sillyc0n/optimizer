@@ -24,6 +24,7 @@ else:
 
 df = pd.read_csv(input_file, dtype={'yahoo_symbol': str})
 df = df.replace({np.nan: None})
+df['yahoo_timestamp'] = pd.to_datetime(df['yahoo_timestamp']).astype(int)
 
 # Progress animation variables
 animation = "|/-\\"
@@ -43,16 +44,25 @@ def positive_delay():
             return delay
 
 total_funds = len(df)
-for sedol in df['sedol']:
+
+if 'yahoo_timestamp' not in df.columns:
+    df["yahoo_timestamp"] = None
+
+if 'yahoo_symbol' not in df.columns:
+    df["yahoo_symbol"] = None
+
+for sedol, symbol, yahoo_timestamp in zip(df['sedol'], df["yahoo_symbol"], df['yahoo_timestamp']):
+    # Print progress information
+    index += 1
+    progress = f"\rProcessing symbols... {animation[index % len(animation)]} Processed: {index}/{total_funds} | Has Yahoo Symbol: {has_yahoo_symbol} | Has Yahoo Quotes: {has_yahoo_quotes} | Current symbol: {sedol}/{symbol}"
+    print(progress, end='')
+    sys.stdout.flush()
 
     # skip making query for yahoo quotes if what we have has been fetched within 24h
-    if pd.notnull(df.loc[sedol, 'yahoo_timestamp']) and df.loc[sedol, 'yahoo_timestamp'] < time.time() - DAY_IN_SECONDS:
+    # print(f"yahoo_symbol: {symbol} yahoo_timestamp: {yahoo_timestamp}, time.time(): {int(time.time())}, {yahoo_timestamp < int(time.time()) - DAY_IN_SECONDS}\n")
+    now = int(time.time())
+    if yahoo_timestamp is not None and now - int(yahoo_timestamp) < DAY_IN_SECONDS:
         continue
-
-    if 'yahoo_symbol' in df.columns:
-        symbol = df.loc[df['sedol'] == sedol, "yahoo_symbol"].iloc[0]
-    else:
-        symbol = None
 
     # get the symbol if not there
     if not symbol or pd.isna(symbol):
@@ -117,14 +127,7 @@ for sedol in df['sedol']:
             print(f"No Yahoo Quotes for yahoo symbol: {symbol} url: {url}")
     else:        
         print(f"No Yahoo Quotes for yahoo symbol: {symbol} url: {url}")
-
-    index += 1
         
-    # Print progress information
-    progress = f"\rProcessing symbols... {animation[index % len(animation)]} Processed: {index}/{total_funds} | Has Yahoo Symbol: {has_yahoo_symbol} | Has Yahoo Quotes: {has_yahoo_quotes} | Current symbol: {sedol}/{symbol}"
-    print(progress, end='')
-    sys.stdout.flush()
-
 # Print completion message
 completion_message = f"\nOutput saved to {input_file}"
 print(completion_message)
