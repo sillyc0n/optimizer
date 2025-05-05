@@ -69,8 +69,8 @@ for sedol, symbol, yahoo_timestamp in zip(df['sedol'], df["yahoo_symbol"], df['y
     if not symbol or pd.isna(symbol):
         delay = positive_delay()
         time.sleep(delay)
-        # Make the API call to Yahoo Finance
-        url = f"https://query1.finance.yahoo.com/v1/finance/search?q={sedol}&lang=en-GB&region=GB&quotesCount=6&newsCount=4&enableFuzzyQuery=false&quotesQueryId=tss_match_phrase_query&multiQuoteQueryId=multi_quote_single_token_query&newsQueryId=news_cie_vespa&enableCb=true&enableNavLinks=true&enableEnhancedTrivialQuery=true&enableCulturalAssets=true&enableLogoUrl=true"
+        # Make the API call to Yahoo Finance        
+        url = f"https://query2.finance.yahoo.com/v1/finance/search?q={sedol}&lang=en-US&region=US&quotesCount=6&newsCount=3&listsCount=2&enableFuzzyQuery=false&quotesQueryId=tss_match_phrase_query&multiQuoteQueryId=multi_quote_single_token_query&newsQueryId=news_cie_vespa&enableCb=false&enableNavLinks=true&enableEnhancedTrivialQuery=true&enableResearchReports=true&enableCulturalAssets=true&enableLogoUrl=true&enableLists=false&recommendCount=5&enablePrivateCompany=true"
         response = requests.get(url, headers=headers)
 
         # Check if the response code is 200 (indicating a successful request)
