@@ -1,13 +1,12 @@
 import argparse
 import os
 import sys
-import requests
 import json
 import time
 import pandas as pd
 import numpy as np
 import random
-import requests
+from curl_cffi import requests
 from tenacity import retry, wait_fixed, wait_exponential, stop_after_attempt
 
 # constants
@@ -34,7 +33,19 @@ last_error  = None
 
 # Set the headers for the API request
 headers = {
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:138.0) Gecko/20100101 Firefox/138.0',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'en-GB,en;q=0.5',
+    'Accept-Encoding': 'gzip, deflate, br, zstd',
+    'Connection': 'keep-alive',
+    'Cookie': 'GUC=AQABCAFoIExoR0IfIQSt&s=AQAAANmNwPa-&g=aB8CkQ; A1=d=AQABBH6-9GcCEFvabn4WJZcNtXhWvrsmuXwFEgABCAFMIGhHaPZ0rXYBAiAAAAcIe770Z6FcHpc&S=AQAAAndbvWR7_SyzOYJ529mHRIM; A3=d=AQABBH6-9GcCEFvabn4WJZcNtXhWvrsmuXwFEgABCAFMIGhHaPZ0rXYBAiAAAAcIe770Z6FcHpc&S=AQAAAndbvWR7_SyzOYJ529mHRIM; PRF=dock-collapsed%3Dtrue%26t%3D0P0001PP47.L%252B0P000019J5.L; _ebd=bid-9e7isk5jv9fjr&d=192819842f9a53fe97accdfade3d49b8&v=1; dflow=116; _dmit=BGWuRreWQbdOKUnpXQrgINUETYHakETYHaqCJsDvJAFAEQVABAAAAAAAAAAAAAAAAAAAAAUAAAlAAJtCA8gAEIAA.bid-9e7isk5jv9fjr.eyJvIjoiYmlkLTllN2lzazVqdjlmanIifQ==.1746862271253~AMEUCIQCJ8nt+8PVE/q/0qrNoYLn8VyrvATOWe+iJCulJJP6AywIgHMKdsjDQtHod2Mb2pXYIOuBCiMNP5Qqh+U8SeR6UCCg=; _dmieu=CQRMeYAQRMeYAAOABBENBpFgAAAAAAAAACiQAAAAAAAA.YAAAAAAAAAAA; A1S=d=AQABBH6-9GcCEFvabn4WJZcNtXhWvrsmuXwFEgABCAFMIGhHaPZ0rXYBAiAAAAcIe770Z6FcHpc&S=AQAAAndbvWR7_SyzOYJ529mHRIM; cmp=t=1747466470&j=1&u=1---&v=80; EuConsent=CQRMeYAQRMeYAAOADBENBpFgAAAAAAAAACiQAAAAAAAA',
+    'Upgrade-Insecure-Requests': '1',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-User': '?1',
+    'Priority': 'u=0, i',
+    'TE': 'trailers'
 }
 
 def positive_delay():
@@ -69,9 +80,11 @@ for sedol, symbol, yahoo_timestamp in zip(df['sedol'], df["yahoo_symbol"], df['y
     if not symbol or pd.isna(symbol):
         delay = positive_delay()
         time.sleep(delay)
-        # Make the API call to Yahoo Finance        
+        # Make the API call to Yahoo Finance
+        #url = f"https://query1.finance.yahoo.com/v1/finance/search?q={sedol}&lang=en-GB&region=GB&quotesCount=6&newsCount=4&enableFuzzyQuery=false&quotesQueryId=tss_match_phrase_query&multiQuoteQueryId=multi_quote_single_token_query&newsQueryId=news_cie_vespa&enableCb=true&enableNavLinks=true&enableEnhancedTrivialQuery=true&enableCulturalAssets=true&enableLogoUrl=true"
+        #url = f"https://query2.finance.yahoo.com/v1/finance/search?q={sedol}&lang=en-US&region=US&quotesCount=6&newsCount=3&listsCount=2&enableFuzzyQuery=false&quotesQueryId=tss_match_phrase_query&multiQuoteQueryId=multi_quote_single_token_query&newsQueryId=news_cie_vespa&enableCb=false&enableNavLinks=true&enableEnhancedTrivialQuery=true&enableResearchReports=true&enableCulturalAssets=true&enableLogoUrl=true&enableLists=false&recommendCount=5&enablePrivateCompany=true"        
         url = f"https://query2.finance.yahoo.com/v1/finance/search?q={sedol}&lang=en-US&region=US&quotesCount=6&newsCount=3&listsCount=2&enableFuzzyQuery=false&quotesQueryId=tss_match_phrase_query&multiQuoteQueryId=multi_quote_single_token_query&newsQueryId=news_cie_vespa&enableCb=false&enableNavLinks=true&enableEnhancedTrivialQuery=true&enableResearchReports=true&enableCulturalAssets=true&enableLogoUrl=true&enableLists=false&recommendCount=5&enablePrivateCompany=true"
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, impersonate="chrome124")
 
         # Check if the response code is 200 (indicating a successful request)
         if response.status_code == 200:
@@ -103,7 +116,7 @@ for sedol, symbol, yahoo_timestamp in zip(df['sedol'], df["yahoo_symbol"], df['y
         @retry(stop=stop_after_attempt(10), wait=wait_exponential(multiplier=2.5, min=4, max=10000))
         def safe_get_request(url, headers):
             try:
-                response = requests.get(url, headers=headers)
+                response = requests.get(url, headers=headers, impersonate="chrome124")
                 response.raise_for_status()
                 return response
             except (requests.exceptions.RequestException, requests.exceptions.HTTPError) as e:
