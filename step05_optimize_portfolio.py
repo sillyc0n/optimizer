@@ -221,32 +221,66 @@ class PortfolioOptimizer:
     
         fig, ax = plt.subplots(figsize=(12, 8))
 
-        for i, (risk, yield_, weight) in enumerate(zip(risks, yields, weights)):
-            weights_percentage = [f'{float(w)*100:2.2f}%' for w in weight]
-            print(f"yield: {yield_: .3f}, weights: {weights_percentage}, risk: {risk}")
+        # Plot efficient frontier points
+        plt.scatter(risks, yields, alpha=0.5, label='Efficient Frontier')
 
-        #    sedols = self.funds_data.iloc[np.argmax(weight), 0]
-        #    allocation = np.round(np.sum(weight), 2)
-        #    description = f'SEDOLs: {sedols}\nAllocation: {allocation}'
-        #    print(description)
-            
-        #def hover(event):
-        #    if event.inaxes == ax:
-        #        cont, labels = plt.get_legend_handles_labels()
-        #        return [plt.annotate(description, xy=(risk, yield_), xytext=(10,10),
-        #                              textcoords='offset points', ha='left', va='bottom',
-        #                              arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=.2"),
-        #                for i, risk, yield_ in zip(range(len(risks)), risks, yields) if event.xdata == risk and event.ydata == yield_]
-        #                              bbox=dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.5))
+        # Calculate Sharpe ratios for each point
+        risk_free_rate = 0.0525  # 5.25%
+        sharpe_ratios = [(y - risk_free_rate) / r for y, r in zip(yields, risks)]
         
-        #fig.canvas.mpl_connect('motion_notify_event', hover)
+        # Find tangent portfolio (maximum Sharpe ratio)
+        tangent_idx = np.argmax(sharpe_ratios)
+        tangent_risk = risks[tangent_idx]
+        tangent_yield = yields[tangent_idx]
         
-        plt.scatter(risks, yields, alpha=0.5)
-        plt.xlabel('Risk')
-        plt.ylabel('Return')
-        plt.title('Efficient Frontier')
+        # Plot tangent portfolio
+        plt.scatter(tangent_risk, tangent_yield, color='red', s=100, label='Tangent Portfolio')
+        
+        # Plot risk-free rate point
+        plt.scatter(0, risk_free_rate, color='green', s=100, label='Risk-Free Rate')
+        
+        # Draw Capital Market Line with dynamic range
+        min_risk = min(risks)
+        max_risk = max(risks)
+        max_yield = max(yields)
+        min_yield = min(yields)
+        
+        # Calculate the maximum x value that keeps y within 1.2 * max_yield
+        slope = (tangent_yield - risk_free_rate) / tangent_risk
+        max_x = (1.2 * max_yield - risk_free_rate) / slope
+        
+        # Calculate ranges for efficient frontier
+        risk_range = max_risk - min_risk
+        yield_range = max_yield - min_yield
+
+        # Calculate padding to make efficient frontier occupy 60-80% of the plot
+        x_padding = risk_range * 0.25  # 25% padding on each side
+        y_padding = yield_range * 0.25  # 25% padding on each side
+
+        # Set axis limits with calculated padding
+        plt.xlim(min_risk - x_padding, min(max_risk, max_x) + x_padding)
+        plt.ylim(min_yield - y_padding, max_yield + y_padding)
+
+        # Draw Capital Market Line extending to the left and limited on the right
+        # Dynamically adjust right limit based on slope
+        # Steeper slopes (higher Sharpe ratios) get more limited
+        slope_factor = 1.0 / (1.0 + abs(slope))  # Inverse relationship with slope
+        right_limit = tangent_risk * (1.0 + slope_factor * 0.1)  # Max 10% extension for steep slopes
+        x = np.linspace(0, right_limit, 100)  # Start from 0 (risk-free rate)
+        y = risk_free_rate + slope * x
+        plt.plot(x, y, 'r--', label='Capital Market Line')
+
+        # Print weights for tangent portfolio
+        tangent_weights = weights[tangent_idx]
+        weights_percentage = [f'{float(w)*100:2.2f}%' for w in tangent_weights]
+        print(f"Tangent Portfolio - yield: {tangent_yield:.3f}, risk: {tangent_risk:.3f}, weights: {weights_percentage}")
+
+        plt.xlabel('Risk (Standard Deviation)')
+        plt.ylabel('Expected Return')
+        plt.title('Efficient Frontier with Capital Market Line')
         
         plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.grid(True)
         plt.tight_layout()
         plt.show()
 
