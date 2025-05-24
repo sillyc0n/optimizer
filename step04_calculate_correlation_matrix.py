@@ -42,11 +42,15 @@ for filename in json_files:
 
     # Select the specific nested data for index and columns
     #timestamp = json['chart']['result'][0]['timestamp']
-    timestamp = [math.floor(t / 86400) * 86400 for t in json['chart']['result'][0]['timestamp']]
-
-
-    column_data = json['chart']['result'][0]['indicators']['adjclose'][0]['adjclose']
-    symbol = json['chart']['result'][0]['meta']['symbol']
+    
+    try:
+        timestamp = [math.floor(t / 86400) * 86400 for t in json['chart']['result'][0]['timestamp']]
+        column_data = json['chart']['result'][0]['indicators']['adjclose'][0]['adjclose']
+        symbol = json['chart']['result'][0]['meta']['symbol']
+    except KeyError as e:
+        print(f"KeyError in {file_path}: {str(e)}")
+        print(f"Skipping {filename} due to missing data.")
+        continue
 
     # Add data to combined DataFrame
     temp_df = pd.DataFrame({symbol: column_data}, index=timestamp)
@@ -57,7 +61,7 @@ for filename in json_files:
 
     # Print progress information
     progress = f"\rReading symbols... {animation[index % len(animation)]} Read: {index}/{len(json_files)} Current symbol: {symbol}"
-    print(progress, end='')
+    #print(progress, end='')
 
 
 print("\nCalculating Matrix. Please wait ...")
