@@ -98,13 +98,18 @@ class PortfolioOptimizer:
         # Calculate portfolio variance
         port_variance = np.dot(weights.T, np.dot(self.covariance_matrix, weights))
         
+        # Add penalty term for unequal weighting
+        penalty = np.sum((weights - 1/self.n_funds)**2)
+
         # Combine objectives with weights for importance
         # Negative because we want to maximize yield and sharpe
         objective = -(
             0.3 * port_dist_yield +  # 30% weight on yield
             0.3 * port_sharpe +      # 30% weight on sharpe
             -0.2 * port_charge +     # 20% weight on minimizing charges
-            -0.2 * port_variance     # 20% weight on minimizing variance
+            -0.2 * port_variance +   # 20% weight on minimizing variance
+            0
+            #0.1 * penalty            # New term to maintain diversification
         )
         
         return objective
@@ -113,9 +118,10 @@ class PortfolioOptimizer:
         """Calculate portfolio risk (standard deviation)"""
         return np.sqrt(np.dot(weights.T, np.dot(self.covariance_matrix, weights)))
     
+    
     def optimize_portfolio(self, min_weight=0.05, max_weight=0.3):
         """
-        Optimize the portfolio allocation
+        Optimize the portfolio allocation balancing the objectives.
         
         Parameters:
         min_weight: minimum weight for any fund (default 5%)
@@ -127,10 +133,9 @@ class PortfolioOptimizer:
         """
         # Constraints
         constraints = [
-            {
-                'type': 'eq', 
-                'fun': lambda x: np.sum(x) - 1
-            },  # weights sum to 1
+            {'type': 'eq', 'fun': lambda x: np.sum(x) - 1},         # weights sum to 1
+            #{'type': 'ineq', 'fun': lambda x: min_weight - x}, 
+            #{'type': 'ineq', 'fun': lambda x: x - max_weight}
         ]
         # Bounds for each weight
         bounds = tuple((min_weight, max_weight) for _ in range(self.n_funds))       # ((0.05, 0.3), ... repeated n_funds times )
@@ -146,9 +151,18 @@ class PortfolioOptimizer:
             bounds=bounds,                                                          # Bounds constraint on the variables.
             constraints=constraints
         )
-        
+
         optimal_weights = result.x
-        
+
+        print(result)
+
+        optimal_weights_df = pd.DataFrame({
+            'sedol': self.funds_data['sedol'],
+            'fund_name': self.funds_data['fund_name'],
+            'distribution_yield': self.funds_data['distribution_yield'],
+            'weight': optimal_weights
+        })
+
         # Calculate resulting portfolio metrics
         portfolio_metrics = {
             'distribution_yield': np.sum(optimal_weights * self.funds_data['distribution_yield']),
@@ -158,29 +172,28 @@ class PortfolioOptimizer:
             'success': result.success,
             'optimization_message': result.message
         }
-        
         return optimal_weights, portfolio_metrics
 
     def generate_efficient_frontier(self, n_points=50):
         """
         Generate efficient frontier by varying target returns
         Returns points for plotting efficient frontier
-        """        
+        """
         min_yield = np.min(self.funds_data['distribution_yield'])
         max_yield = np.max(self.funds_data['distribution_yield'])
-        
+
         print(f"generate efficient frontier - min_yield: {min_yield}, max_yield: {max_yield}")
 
         target_yields = np.linspace(min_yield, max_yield, n_points)                                         # an array of target yields
         frontier_points = []
-        
+
         for target in target_yields:
             # Add target yield constraint
             constraints = [
                 {'type': 'eq', 'fun': lambda x: np.sum(x) - 1},                     # weights sum to 1
                 {'type': 'eq', 'fun': lambda x: np.sum(x * self.funds_data['distribution_yield']) - target} # overall portfolio's weighted average yield equals to target
             ]
-            
+
             # Optimize for minimum variance at this target yield
             result = minimize(
                 lambda w: self.portfolio_risk(w),                                   # objective function
@@ -189,26 +202,26 @@ class PortfolioOptimizer:
                 bounds=tuple((0, 1) for _ in range(self.n_funds)),                  # funds allocation between 0 and 1
                 constraints=constraints
             )
-            
+
             if result.success:
                 risk = self.portfolio_risk(result.x)
                 frontier_points.append({
                     'risk': risk,
                     'yield': target,
-                    'weights': result.x,                   
+                    'weights': result.x,
                 })
-        
+
         return frontier_points
 
     def plot_efficient_frontier(self, frontier):
         print(self.funds_data)
-        risks = [point['risk'] for point in frontier]
+        risks = [point['risk'] for point in frontier]                
         yields = [point['yield'] for point in frontier]
         weights = [point['weights'] for point in frontier]
     
         fig, ax = plt.subplots(figsize=(12, 8))
 
-        for i, (risk, yield_, weight) in enumerate(zip(risks, yields, weights)):            
+        for i, (risk, yield_, weight) in enumerate(zip(risks, yields, weights)):
             weights_percentage = [f'{float(w)*100:2.2f}%' for w in weight]
             print(f"yield: {yield_: .3f}, weights: {weights_percentage}, risk: {risk}")
 
@@ -259,8 +272,9 @@ optimizer = PortfolioOptimizer(fd, cm)
 
 # Optimize portfolio
 optimal_weights, metrics = optimizer.optimize_portfolio()
-print(f"optimal_weights: {optimal_weights}")
+print(f"optimal_weights:\n{optimal_weights}")
 print(f"metrics: {metrics}")
+
 # Generate efficient frontier
 frontier = optimizer.generate_efficient_frontier()
 
