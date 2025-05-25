@@ -179,19 +179,26 @@ class PortfolioOptimizer:
         Generate efficient frontier by varying target returns
         Returns points for plotting efficient frontier
         """
-        min_yield = np.min(self.funds_data['distribution_yield'])
-        max_yield = np.max(self.funds_data['distribution_yield'])
+        #min_yield = np.min(self.funds_data['distribution_yield'])
+        #max_yield = np.max(self.funds_data['distribution_yield'])
 
-        print(f"generate efficient frontier - min_yield: {min_yield}, max_yield: {max_yield}")
+        #print(f"generate efficient frontier - min_yield: {min_yield}, max_yield: {max_yield}")
 
-        target_yields = np.linspace(min_yield, max_yield, n_points)                                         # an array of target yields
+        min_net_yield = np.min(self.funds_data['distribution_yield'] - self.funds_data['total_expenses'])
+        max_net_yield = np.max(self.funds_data['distribution_yield'] - self.funds_data['total_expenses'])
+
+        print(f"generate efficient frontier - min_net_yield: {min_net_yield}, max_net_yield: {max_net_yield}")
+
+        #target_yields = np.linspace(min_yield, max_yield, n_points)                                         # an array of target yields
+        target_yields = np.linspace(min_net_yield, max_net_yield, n_points)                                         # an array of target yields
         frontier_points = []
 
         for target in target_yields:
             # Add target yield constraint
             constraints = [
                 {'type': 'eq', 'fun': lambda x: np.sum(x) - 1},                     # weights sum to 1
-                {'type': 'eq', 'fun': lambda x: np.sum(x * self.funds_data['distribution_yield']) - target} # overall portfolio's weighted average yield equals to target
+                #{'type': 'eq', 'fun': lambda x: np.sum(x * self.funds_data['distribution_yield']) - target} # overall portfolio's weighted average yield equals to target
+                {'type': 'eq', 'fun': lambda x: np.sum(x * (self.funds_data['distribution_yield'] - self.funds_data['total_expenses'])) - target} # overall portfolio's weighted average yield equals to target
             ]
 
             # Optimize for minimum variance at this target yield
@@ -207,7 +214,8 @@ class PortfolioOptimizer:
                 risk = self.portfolio_risk(result.x)
                 frontier_points.append({
                     'risk': risk,
-                    'yield': target,
+                    #'yield': target,
+                    'net_yield': target,
                     'weights': result.x,
                 })
 
@@ -216,7 +224,8 @@ class PortfolioOptimizer:
     def plot_efficient_frontier(self, frontier):
         print(self.funds_data)
         risks = [point['risk'] for point in frontier]                
-        yields = [point['yield'] for point in frontier]
+        #yields = [point['yield'] for point in frontier]
+        yields = [point['net_yield'] for point in frontier]
         weights = [point['weights'] for point in frontier]
     
         fig, ax = plt.subplots(figsize=(12, 8))
