@@ -65,6 +65,9 @@ python query_by_sql.py output/hl.csv output/cm.csv "SELECT sedol, citicode, full
 ### Top 15 Wealth150 funds ordered by gross_running_yield
 python query_by_sql.py output/hl.csv output/cm.csv "SELECT sedol, citicode, full_description, annual_charge, Wealth150, distribution_yield, underlying_yield, gross_yield, gross_running_yield, fidelity_sharpeRatios_oneYear, fidelity_sharpeRatios_threeYear FROM hl_csv WHERE Wealth150=1 ORDER BY gross_running_yield DESC LIMIT 15"
 
+### Print sedols on one line
+python query_by_sql.py output/hl.csv output/cm.csv "SELECT sedol FROM hl_csv WHERE unit_type='Income' and fidelity_sharpeRatios_oneYear>0 ORDER BY distribution_yield - annual_charge DESC LIMIT 25" | awk 'NR>1 {printf "%s ", $2} END {print ""}'
+
 ## License
 See [LICENSE.md](LICENSE.md) for license information.
 

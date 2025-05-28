@@ -189,8 +189,7 @@ class PortfolioOptimizer:
 
         print(f"generate efficient frontier - min_net_yield: {min_net_yield}, max_net_yield: {max_net_yield}")
 
-        #target_yields = np.linspace(min_yield, max_yield, n_points)                                         # an array of target yields
-        target_yields = np.linspace(min_net_yield, max_net_yield, n_points)                                         # an array of target yields
+        target_yields = np.linspace(min_net_yield, max_net_yield, n_points)                                         # an array of target yields        
         frontier_points = []
 
         for target in target_yields:
@@ -221,17 +220,16 @@ class PortfolioOptimizer:
 
         return frontier_points
 
-    def plot_efficient_frontier(self, frontier):
-        print(self.funds_data)
+    def plot_efficient_frontier(self, frontier, ax=None):
         risks = [point['risk'] for point in frontier]                
-        #yields = [point['yield'] for point in frontier]
         yields = [point['net_yield'] for point in frontier]
         weights = [point['weights'] for point in frontier]
-    
-        fig, ax = plt.subplots(figsize=(12, 8))
+
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(12, 8))
 
         # Plot efficient frontier points
-        plt.scatter(risks, yields, alpha=0.5, label='Efficient Frontier')
+        ax.plot(risks, yields, color='black', linewidth=2, label='Efficient Frontier')
 
         # Calculate Sharpe ratios for each point
         risk_free_rate = 0.0525  # 5.25%
@@ -243,21 +241,21 @@ class PortfolioOptimizer:
         tangent_yield = yields[tangent_idx]
         
         # Plot tangent portfolio
-        plt.scatter(tangent_risk, tangent_yield, color='red', s=100, label='Tangent Portfolio')
+        ax.scatter(tangent_risk, tangent_yield, color='red', s=100, label='Tangent Portfolio')
         
         # Plot risk-free rate point
-        plt.scatter(0, risk_free_rate, color='green', s=100, label='Risk-Free Rate')
-        
+        ax.scatter(0, risk_free_rate, color='green', s=100, label='Risk-Free Rate')
+
         # Draw Capital Market Line with dynamic range
         min_risk = min(risks)
         max_risk = max(risks)
         max_yield = max(yields)
         min_yield = min(yields)
-        
-        # Calculate the maximum x value that keeps y within 1.2 * max_yield
+
+        # Draw Capital Market Line
         slope = (tangent_yield - risk_free_rate) / tangent_risk
         max_x = (1.2 * max_yield - risk_free_rate) / slope
-        
+
         # Calculate ranges for efficient frontier
         risk_range = max_risk - min_risk
         yield_range = max_yield - min_yield
@@ -267,31 +265,64 @@ class PortfolioOptimizer:
         y_padding = yield_range * 0.25  # 25% padding on each side
 
         # Set axis limits with calculated padding
-        plt.xlim(min_risk - x_padding, min(max_risk, max_x) + x_padding)
-        plt.ylim(min_yield - y_padding, max_yield + y_padding)
+        ax.set_xlim(min_risk - x_padding, min(max_risk, max_x) + x_padding)
+        ax.set_ylim(min_yield - y_padding, max_yield + y_padding)
 
         # Draw Capital Market Line extending to the left and limited on the right
         # Dynamically adjust right limit based on slope
         # Steeper slopes (higher Sharpe ratios) get more limited
+        tangent_yield = yields[tangent_idx]
+        slope = (tangent_yield - risk_free_rate) / tangent_risk
         slope_factor = 1.0 / (1.0 + abs(slope))  # Inverse relationship with slope
         right_limit = tangent_risk * (1.0 + slope_factor * 0.1)  # Max 10% extension for steep slopes
+
+        #x = np.linspace(0, max(risks)*1.2, 100)
         x = np.linspace(0, right_limit, 100)  # Start from 0 (risk-free rate)
+
         y = risk_free_rate + slope * x
-        plt.plot(x, y, 'r--', label='Capital Market Line')
+        ax.plot(x, y, 'r--', label='Capital Market Line')
 
-        # Print weights for tangent portfolio
-        tangent_weights = weights[tangent_idx]
-        weights_percentage = [f'{float(w)*100:2.2f}%' for w in tangent_weights]
-        print(f"Tangent Portfolio - yield: {tangent_yield:.3f}, risk: {tangent_risk:.3f}, weights: {weights_percentage}")
-
-        plt.xlabel('Risk (Standard Deviation)')
-        plt.ylabel('Expected Return')
-        plt.title('Efficient Frontier with Capital Market Line')
-        
-        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-        plt.grid(True)
+        ax.set_xlabel('Risk (Standard Deviation)')
+        ax.set_ylabel('Net Expected Return')
+        ax.set_title('Efficient Frontier with Monte Carlo Simulation')
+        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+        ax.grid(True)
         plt.tight_layout()
-        plt.show()
+
+    def monte_carlo_efficient_frontier(self, n_portfolios=10000, risk_free_rate=0.0525, random_seed=42, ax=None):
+        """
+        Monte Carlo simulation to generate random portfolios and plot the efficient frontier.
+        If ax is provided, plot on that axis.
+        Returns: portfolio_risks, portfolio_returns, sharpe_ratios
+        """
+        np.random.seed(random_seed)
+        n_assets = self.n_funds
+        mean_returns = (self.funds_data['distribution_yield'] - self.funds_data['total_expenses']).values
+        cov_matrix = self.covariance_matrix.values
+
+        portfolio_returns = []
+        portfolio_risks = []
+        portfolio_weights = []
+
+        for _ in range(n_portfolios):
+            weights = np.random.rand(n_assets)
+            weights /= np.sum(weights)
+
+            port_return = np.dot(weights, mean_returns)
+            port_vol = np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights)))
+
+            portfolio_returns.append(port_return)
+            portfolio_risks.append(port_vol)
+            portfolio_weights.append(weights)
+
+        portfolio_returns = np.array(portfolio_returns)
+        portfolio_risks = np.array(portfolio_risks)
+        sharpe_ratios = (portfolio_returns - risk_free_rate) / portfolio_risks
+
+        if ax is not None:
+            scatter = ax.scatter(portfolio_risks, portfolio_returns, c=sharpe_ratios, cmap='viridis', marker='o', alpha=0.3, label='Monte Carlo Portfolios')
+            plt.colorbar(scatter, ax=ax, label='Sharpe Ratio')
+        return portfolio_risks, portfolio_returns, sharpe_ratios
 
 # Example usage:
 '''
@@ -314,13 +345,24 @@ covariance_matrix = np.array([
 optimizer = PortfolioOptimizer(fd, cm)
 
 # Optimize portfolio
-optimal_weights, metrics = optimizer.optimize_portfolio()
-print(f"optimal_weights:\n{optimal_weights}")
-print(f"metrics: {metrics}")
+#optimal_weights, m1etrics = optimizer.optimize_portfolio()
+#print(f"optimal_weights:\n{optimal_weights}")
+#print(f"metrics: {metrics}")
+
+# 
+
 
 # Generate efficient frontier
 frontier = optimizer.generate_efficient_frontier()
+# Create a single figure and axis
+fig, ax = plt.subplots(figsize=(12, 8))
 
 # print (f"Efficient frontier: {frontier}")
+# Plot Monte Carlo simulation on the same axis
+optimizer.monte_carlo_efficient_frontier(ax=ax)
 
-optimizer.plot_efficient_frontier(frontier)
+# Plot analytical efficient frontier on the same axis
+optimizer.plot_efficient_frontier(frontier, ax=ax)
+
+
+plt.show()
