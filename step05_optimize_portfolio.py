@@ -3,6 +3,7 @@ from scipy.optimize import minimize
 import pandas as pd
 import argparse
 import matplotlib.pyplot as plt
+import mplcursors
 
 parser = argparse.ArgumentParser(description="Portfolio Optimizer")
 parser.add_argument("funds_file", help="Path to funds data CSV file")
@@ -24,10 +25,15 @@ if args.sedol_list:
     print(f"Filtered fd to include only specified SEDOLs: {len(fd)}")
 
     unique_symbols = fd['yahoo_symbol'].unique()
-
-    print(f"Unique symbols: {unique_symbols}")
-    cm = cm.loc[unique_symbols, unique_symbols]
-    print(f"Filtered cm to include only specified SEDOLs: {len(cm)} x {len(cm.columns)}")
+    # Only keep symbols that exist in cm
+    symbols_in_cm = [s for s in unique_symbols if s in cm.index and s in cm.columns]
+    missing = set(unique_symbols) - set(symbols_in_cm)
+    if missing:
+        print(f"Symbols not found in covariance matrix and will be dropped: {missing}")
+    # Filter fd and cm to only those symbols
+    fd = fd[fd['yahoo_symbol'].isin(symbols_in_cm)]
+    cm = cm.loc[symbols_in_cm, symbols_in_cm]
+    print(f"Filtered fd and cm to include only symbols present in both. fd: {len(fd)}, cm: {len(cm)} x {len(cm.columns)}")
 
 unique_symbols = fd['yahoo_symbol'].unique()
 if len(unique_symbols) == len(fd):
@@ -229,7 +235,8 @@ class PortfolioOptimizer:
             fig, ax = plt.subplots(figsize=(12, 8))
 
         # Plot efficient frontier points
-        ax.plot(risks, yields, color='black', linewidth=2, label='Efficient Frontier')
+        # Plot efficient frontier points as a scatter for interactivity
+        scatter = ax.scatter(risks, yields, color='black', label='Efficient Frontier', zorder=10)
 
         # Calculate Sharpe ratios for each point
         risk_free_rate = 0.0525  # 5.25%
@@ -282,11 +289,39 @@ class PortfolioOptimizer:
         y = risk_free_rate + slope * x
         ax.plot(x, y, 'r--', label='Capital Market Line')
 
+        # Add interactive hover tooltips for efficient frontier points
+        sedols = list(self.funds_data['sedol'])
+        def tooltip_text(index):
+            w = weights[index]
+            return '\n'.join([f"{sedol}: {weight:.3f}" for sedol, weight in zip(sedols, w)])
+
+        cursor = mplcursors.cursor(scatter, hover=True)
+        @cursor.connect("add")
+        def on_add(sel):
+            idx = sel.index
+            sel.annotation.set_text(tooltip_text(idx))
+            sel.annotation.get_bbox_patch().set(fc="white", alpha=0.9)
+
         ax.set_xlabel('Risk (Standard Deviation)')
         ax.set_ylabel('Net Expected Return')
         ax.set_title('Efficient Frontier with Monte Carlo Simulation')
-        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+        #ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
         ax.grid(True)
+
+        # Find tangent portfolio (maximum Sharpe ratio)
+        risk_free_rate = 0.0525
+        risks = [point['risk'] for point in frontier]
+        yields = [point['net_yield'] for point in frontier]
+        sharpe_ratios = [(y - risk_free_rate) / r for y, r in zip(yields, risks)]
+        tangent_idx = np.argmax(sharpe_ratios)
+        tangent_portfolio = frontier[tangent_idx]
+
+        print("Tangent Portfolio (Max Sharpe Ratio):")
+        for sedol, weight in zip(fd['sedol'], tangent_portfolio['weights']):
+            print(f"  {sedol}: {weight:.4f}")
+        print(f"  Net Yield: {tangent_portfolio['net_yield']:.4f}, Risk: {tangent_portfolio['risk']:.4f}, Sharpe: {sharpe_ratios[tangent_idx]:.4f}") 
+        print("-" * 40)
+
         plt.tight_layout()
 
     def monte_carlo_efficient_frontier(self, n_portfolios=10000, risk_free_rate=0.0525, random_seed=42, ax=None):
@@ -305,7 +340,8 @@ class PortfolioOptimizer:
         portfolio_weights = []
 
         for _ in range(n_portfolios):
-            weights = np.random.rand(n_assets)
+            #weights = np.random.rand(n_assets)
+            weights = np.random.dirichlet(np.ones(n_assets))
             weights /= np.sum(weights)
 
             port_return = np.dot(weights, mean_returns)
@@ -354,15 +390,30 @@ optimizer = PortfolioOptimizer(fd, cm)
 
 # Generate efficient frontier
 frontier = optimizer.generate_efficient_frontier()
+
+# Print SEDOLs and weights for each portfolio on the efficient frontier
+#print("Efficient Frontier Portfolios (SEDOLs and Weights):")
+#for i, point in enumerate(frontier):
+#    print(f"Portfolio {i+1}:")
+#    for sedol, weight in zip(fd['sedol'], point['weights']):
+#        print(f"  {sedol}: {weight:.4f}")
+#    print(f"  Net Yield: {point['net_yield']:.4f}, Risk: {point['risk']:.4f}")
+#    print("-" * 40)
+
 # Create a single figure and axis
 fig, ax = plt.subplots(figsize=(12, 8))
 
-# print (f"Efficient frontier: {frontier}")
+#print (f"Efficient frontier: {frontier}")
 # Plot Monte Carlo simulation on the same axis
 optimizer.monte_carlo_efficient_frontier(ax=ax)
 
 # Plot analytical efficient frontier on the same axis
 optimizer.plot_efficient_frontier(frontier, ax=ax)
 
+# After plotting both charts
+handles, labels = ax.get_legend_handles_labels()
+by_label = dict(zip(labels, handles))
+ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.show()
 
 plt.show()
