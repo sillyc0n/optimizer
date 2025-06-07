@@ -112,7 +112,7 @@ for sedol in df['sedol']:
                 except (json.JSONDecodeError, KeyError):
                     print(f"Failed to extract data from URL: {risk_rating_url}")
 
-            
+            df.loc[df['sedol'] == sedol, f"{fidelity_prefix}_collectedSRRI"] = json_object['props']['pageProps']['initialState']['fund']['riskAndRating']['collectedSRRI']['rank']
 
             # Extract and append the properties to the row
             for property_name in properties_to_extract:
@@ -125,8 +125,7 @@ for sedol in df['sedol']:
                 
                 # update dataframe
                 if property_value:
-                    df.loc[df['sedol'] == sedol, f"{fidelity_prefix}_{property_name}"] = float(property_value)
-        
+                    df.loc[df['sedol'] == sedol, f"{fidelity_prefix}_{property_name}"] = float(property_value)            
 
         # TODO - check growth_chart
         # https://www.fidelity.co.uk/factsheet-data/factsheet/GB00B5TX5Q59-axa-us-short-duration-hi-yld-gross-z-inc/growth-chart
