@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-Yahoo Finance Sharpe Ratio Calculator
+Multi-Format Sharpe Ratio Calculator
 
-Calculates 1Y, 3Y, and 5Y Sharpe ratios from Yahoo Finance JSON data.
+Calculates 1Y, 3Y, and 5Y Sharpe ratios from Yahoo Finance or Morningstar JSON data.
+Automatically detects the file format and parses accordingly.
 The script assumes a risk-free rate of 2% annually (adjustable).
-Properly handles null adjclose values by dropping those data points.
+Properly handles null values by dropping those data points.
 """
 
 import json
@@ -12,17 +13,32 @@ import sys
 from datetime import datetime, timedelta
 import numpy as np
 
-def load_yahoo_finance_data(filename):
-    """Load and parse Yahoo Finance JSON data, dropping null adjclose values."""
-    with open(filename, 'r') as f:
-        data = json.load(f)
+def detect_json_format(data):
+    """
+    Detect whether the JSON is Yahoo Finance or Morningstar format.
     
+    Returns:
+        'yahoo' for Yahoo Finance format
+        'morningstar' for Morningstar format
+        'unknown' if format cannot be determined
+    """
+    # Check for Yahoo Finance format
+    if 'chart' in data and 'result' in data['chart']:
+        return 'yahoo'
+    
+    # Check for Morningstar format
+    if 'TimeSeries' in data and 'Security' in data['TimeSeries']:
+        return 'morningstar'
+    
+    return 'unknown'
+
+def load_yahoo_finance_data(data):
+    """Load and parse Yahoo Finance JSON data, dropping null adjclose values."""
     # Navigate through the schema structure
     result = data['chart']['result'][0]
     timestamps = result['timestamp']
     
-    # Debug: Print timestamp info
-    print(f"Raw data analysis:")
+    print(f"Yahoo Finance format detected")
     print(f"  Total data points: {len(timestamps)}")
     print(f"  First few timestamps: {timestamps[:5]}")
     print(f"  Last few timestamps: {timestamps[-5:]}")
@@ -55,7 +71,8 @@ def load_yahoo_finance_data(filename):
         # Check for valid timestamp
         if ts is None or ts < min_timestamp or ts > max_timestamp:
             invalid_timestamp_count += 1
-            print(f"    Invalid timestamp at index {i}: {ts}")
+            if invalid_timestamp_count <= 5:  # Only print first 5 invalid timestamps
+                print(f"    Invalid timestamp at index {i}: {ts}")
             continue
             
         valid_data.append((ts, price))
@@ -64,8 +81,87 @@ def load_yahoo_finance_data(filename):
     print(f"  Invalid timestamp data points dropped: {invalid_timestamp_count}")
     print(f"  Valid data points retained: {len(valid_data)}")
     
+    return valid_data
+
+def load_morningstar_data(data):
+    """Load and parse Morningstar JSON data, dropping null values."""
+    # Navigate through the schema structure
+    securities = data['TimeSeries']['Security']
+    
+    if not securities:
+        raise ValueError("No securities found in Morningstar data")
+    
+    # Use the first security (assuming single security data)
+    security = securities[0]
+    history_details = security.get('HistoryDetail', [])
+    
+    print(f"Morningstar format detected")
+    print(f"  Total data points: {len(history_details)}")
+    
+    valid_data = []
+    null_count = 0
+    invalid_date_count = 0
+    
+    for i, detail in enumerate(history_details):
+        # Extract data
+        end_date = detail.get('EndDate')
+        value = detail.get('Value')
+        
+        # Check for valid price/value
+        if value is None:
+            null_count += 1
+            continue
+            
+        # Try to convert value to float
+        try:
+            price = float(value)
+        except (ValueError, TypeError):
+            null_count += 1
+            continue
+        
+        # Check for valid date
+        if end_date is None:
+            invalid_date_count += 1
+            continue
+            
+        # Convert date string to timestamp
+        try:
+            date_obj = datetime.strptime(end_date, '%Y-%m-%d')
+            timestamp = int(date_obj.timestamp())
+        except ValueError:
+            invalid_date_count += 1
+            if invalid_date_count <= 5:  # Only print first 5 invalid dates
+                print(f"    Invalid date at index {i}: {end_date}")
+            continue
+        
+        valid_data.append((timestamp, price))
+    
+    print(f"  Null/invalid price data points dropped: {null_count}")
+    print(f"  Invalid date data points dropped: {invalid_date_count}")
+    print(f"  Valid data points retained: {len(valid_data)}")
+    
+    return valid_data
+
+def load_financial_data(filename):
+    """
+    Load financial data from either Yahoo Finance or Morningstar JSON format.
+    Automatically detects the format and parses accordingly.
+    """
+    with open(filename, 'r') as f:
+        data = json.load(f)
+    
+    # Detect format
+    format_type = detect_json_format(data)
+    
+    if format_type == 'yahoo':
+        valid_data = load_yahoo_finance_data(data)
+    elif format_type == 'morningstar':
+        valid_data = load_morningstar_data(data)
+    else:
+        raise ValueError(f"Unknown JSON format. Expected Yahoo Finance or Morningstar format.")
+    
     if not valid_data:
-        raise ValueError("No valid price data found after filtering null values and invalid timestamps")
+        raise ValueError("No valid price data found after filtering null values and invalid timestamps/dates")
     
     # Sort by timestamp (should already be sorted, but ensure it)
     valid_data.sort(key=lambda x: x[0])
@@ -175,15 +271,16 @@ def calculate_sharpe_ratio(returns, risk_free_rate=0.02):
 
 def main():
     if len(sys.argv) != 2:
-        print("Usage: python sharpe_calculator.py <yahoo_finance_json_file>")
+        print("Usage: python sharpe_calculator.py <json_file>")
+        print("Supports both Yahoo Finance and Morningstar JSON formats")
         sys.exit(1)
     
     filename = sys.argv[1]
     
     try:
-        # Load price data (null values already filtered out)
+        # Load price data (automatically detects format and filters null values)
         print(f"Loading data from {filename}...")
-        price_data = load_yahoo_finance_data(filename)
+        price_data = load_financial_data(filename)
         
         print(f"Proceeding with {len(price_data)} valid data points")
         
@@ -256,7 +353,7 @@ def main():
         
         print("\nNote: Sharpe ratios > 1.0 are generally considered good")
         print("      Sharpe ratios > 2.0 are considered very good")
-        print("      Null adjclose values have been filtered out")
+        print("      Null values and invalid timestamps/dates have been filtered out")
         
     except FileNotFoundError:
         print(f"Error: File '{filename}' not found.")
