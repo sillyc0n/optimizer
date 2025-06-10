@@ -4,6 +4,7 @@ Yahoo Finance Sharpe Ratio Calculator
 
 Calculates 1Y, 3Y, and 5Y Sharpe ratios from Yahoo Finance JSON data.
 The script assumes a risk-free rate of 2% annually (adjustable).
+Properly handles null adjclose values by dropping those data points.
 """
 
 import json
@@ -12,7 +13,7 @@ from datetime import datetime, timedelta
 import numpy as np
 
 def load_yahoo_finance_data(filename):
-    """Load and parse Yahoo Finance JSON data."""
+    """Load and parse Yahoo Finance JSON data, dropping null adjclose values."""
     with open(filename, 'r') as f:
         data = json.load(f)
     
@@ -21,7 +22,8 @@ def load_yahoo_finance_data(filename):
     timestamps = result['timestamp']
     
     # Debug: Print timestamp info
-    print(f"Raw timestamp analysis:")
+    print(f"Raw data analysis:")
+    print(f"  Total data points: {len(timestamps)}")
     print(f"  First few timestamps: {timestamps[:5]}")
     print(f"  Last few timestamps: {timestamps[-5:]}")
     
@@ -32,36 +34,76 @@ def load_yahoo_finance_data(filename):
     else:
         # Fallback to regular close prices
         prices = result['indicators']['quote'][0]['close']
-        print("  Using regular close prices")
+        print("  Using regular close prices (adjclose not available)")
     
-    # Filter out None values and create timestamp-price pairs
+    # Filter out None/null values and invalid timestamps
     valid_data = []
-    for i, (ts, price) in enumerate(zip(timestamps, prices)):
-        if price is not None and ts is not None:
-            valid_data.append((ts, price))
+    null_count = 0
+    invalid_timestamp_count = 0
     
-    # Sort by timestamp (should already be sorted)
+    # Define reasonable timestamp bounds (Unix timestamps)
+    # Jan 1, 2000 to Jan 1, 2030
+    min_timestamp = 946684800   # 2000-01-01
+    max_timestamp = 1893456000  # 2030-01-01
+    
+    for i, (ts, price) in enumerate(zip(timestamps, prices)):
+        # Check for valid price
+        if price is None:
+            null_count += 1
+            continue
+            
+        # Check for valid timestamp
+        if ts is None or ts < min_timestamp or ts > max_timestamp:
+            invalid_timestamp_count += 1
+            print(f"    Invalid timestamp at index {i}: {ts}")
+            continue
+            
+        valid_data.append((ts, price))
+    
+    print(f"  Null price data points dropped: {null_count}")
+    print(f"  Invalid timestamp data points dropped: {invalid_timestamp_count}")
+    print(f"  Valid data points retained: {len(valid_data)}")
+    
+    if not valid_data:
+        raise ValueError("No valid price data found after filtering null values and invalid timestamps")
+    
+    # Sort by timestamp (should already be sorted, but ensure it)
     valid_data.sort(key=lambda x: x[0])
     
     # Debug: Print converted timestamp info
-    if valid_data:
-        print(f"  Timestamp range:")
-        try:
-            first_date = datetime.fromtimestamp(valid_data[0][0]).strftime('%Y-%m-%d')
-            last_date = datetime.fromtimestamp(valid_data[-1][0]).strftime('%Y-%m-%d')
-            print(f"    First: {valid_data[0][0]} -> {first_date}")
-            print(f"    Last: {valid_data[-1][0]} -> {last_date}")
-            
-            time_span_days = (valid_data[-1][0] - valid_data[0][0]) / (24 * 3600)
-            print(f"    Time span: {time_span_days:.1f} days ({time_span_days/365.25:.1f} years)")
-        except (ValueError, OSError) as e:
-            print(f"    Error converting timestamps: {e}")
-            print(f"    Raw range: {valid_data[0][0]} to {valid_data[-1][0]}")
+    print(f"  Timestamp range after filtering:")
+    try:
+        first_date = datetime.fromtimestamp(valid_data[0][0]).strftime('%Y-%m-%d')
+        last_date = datetime.fromtimestamp(valid_data[-1][0]).strftime('%Y-%m-%d')
+        print(f"    First: {valid_data[0][0]} -> {first_date}")
+        print(f"    Last: {valid_data[-1][0]} -> {last_date}")
+        
+        time_span_days = (valid_data[-1][0] - valid_data[0][0]) / (24 * 3600)
+        print(f"    Time span: {time_span_days:.1f} days ({time_span_days/365.25:.1f} years)")
+    except (ValueError, OSError) as e:
+        print(f"    Error converting timestamps: {e}")
+        print(f"    Raw range: {valid_data[0][0]} to {valid_data[-1][0]}")
+        
+        # If timestamp conversion still fails, let's examine the data more closely
+        print(f"    Debugging timestamp issues:")
+        print(f"      Min timestamp in data: {min([ts for ts, _ in valid_data])}")
+        print(f"      Max timestamp in data: {max([ts for ts, _ in valid_data])}")
+        
+        # Try to identify problematic timestamps
+        problematic_timestamps = []
+        for ts, _ in valid_data[:10]:  # Check first 10
+            try:
+                datetime.fromtimestamp(ts)
+            except (ValueError, OSError):
+                problematic_timestamps.append(ts)
+        
+        if problematic_timestamps:
+            print(f"      Problematic timestamps found: {problematic_timestamps}")
     
     return valid_data
 
 def calculate_returns(price_data):
-    """Calculate daily returns from price data."""
+    """Calculate daily returns from price data (already filtered for null values)."""
     if len(price_data) < 2:
         return []
     
@@ -69,6 +111,11 @@ def calculate_returns(price_data):
     for i in range(1, len(price_data)):
         prev_price = price_data[i-1][1]
         curr_price = price_data[i][1]
+        
+        # Additional safety check (shouldn't be needed after filtering, but good practice)
+        if prev_price is None or curr_price is None or prev_price <= 0:
+            continue
+            
         daily_return = (curr_price - prev_price) / prev_price
         returns.append((price_data[i][0], daily_return))
     
@@ -102,6 +149,12 @@ def calculate_sharpe_ratio(returns, risk_free_rate=0.02):
     # Extract just the return values
     return_values = [r[1] for r in returns]
     
+    # Additional filtering for extreme outliers that might indicate data issues
+    return_values = [r for r in return_values if abs(r) < 1.0]  # Remove >100% daily moves (likely data errors)
+    
+    if len(return_values) < 30:
+        return None
+    
     # Calculate statistics
     mean_return = np.mean(return_values)
     std_return = np.std(return_values, ddof=1)  # Sample standard deviation
@@ -128,22 +181,24 @@ def main():
     filename = sys.argv[1]
     
     try:
-        # Load price data
+        # Load price data (null values already filtered out)
         print(f"Loading data from {filename}...")
         price_data = load_yahoo_finance_data(filename)
         
-        print(f"Found {len(price_data)} valid data points")
+        print(f"Proceeding with {len(price_data)} valid data points")
         
-        if not price_data:
-            print("Error: No valid price data found in the file.")
+        if len(price_data) < 2:
+            print("Error: Insufficient valid price data for calculations.")
             sys.exit(1)
         
         # Calculate daily returns
         all_returns = calculate_returns(price_data)
         
         if not all_returns:
-            print("Error: Unable to calculate returns.")
+            print("Error: Unable to calculate returns from available data.")
             sys.exit(1)
+        
+        print(f"Calculated {len(all_returns)} daily returns")
         
         # Check available data span and only calculate for feasible periods
         start_ts = price_data[0][0]
@@ -185,19 +240,23 @@ def main():
             if sharpe is not None:
                 # Get some additional statistics
                 return_values = [r[1] for r in period_returns]
-                annualized_return = np.mean(return_values) * 252
-                annualized_volatility = np.std(return_values, ddof=1) * np.sqrt(252)
+                # Filter extreme outliers for statistics (same as in Sharpe calculation)
+                clean_returns = [r for r in return_values if abs(r) < 1.0]
+                
+                annualized_return = np.mean(clean_returns) * 252
+                annualized_volatility = np.std(clean_returns, ddof=1) * np.sqrt(252)
                 
                 print(f"{period_name:10}: {sharpe:.3f}")
                 print(f"{'':10}  Ann. Return: {annualized_return*100:6.2f}%")
                 print(f"{'':10}  Ann. Volatility: {annualized_volatility*100:6.2f}%")
-                print(f"{'':10}  Days: {len(period_returns)}")
+                print(f"{'':10}  Days: {len(period_returns)} ({len(clean_returns)} after outlier filter)")
                 print("-"*50)
             else:
-                print(f"{period_name:10}: Unable to calculate (insufficient variance)")
+                print(f"{period_name:10}: Unable to calculate (insufficient variance or data)")
         
         print("\nNote: Sharpe ratios > 1.0 are generally considered good")
         print("      Sharpe ratios > 2.0 are considered very good")
+        print("      Null adjclose values have been filtered out")
         
     except FileNotFoundError:
         print(f"Error: File '{filename}' not found.")
