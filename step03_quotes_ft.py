@@ -54,17 +54,16 @@ def process_csv(filename):
     df['ft_xid'] = pd.NA
 
     total = len(df)
-    print(total)
+    errors = 0
     for index, row in df.iterrows():
         # Progress output
-        print(f"\rProcessing row {index+1} of {total}", end='', flush=True)
+        print(f"\rProcessing row {index+1} of {total}. Errors: {errors}", end='', flush=True)
         
         # Fill c_isin if empty
         if pd.isna(row['c_isin']) or not str(row['c_isin']).strip():
             df.at[index, 'c_isin'] = f"GB00{row['sedol']}"
 
         c_isin = df.at[index, 'c_isin']
-        print(c_isin)
         ft_data = search_ft(c_isin)
 
         if ft_data and ft_data.get('data') and ft_data['data'].get('security'):
@@ -72,12 +71,11 @@ def process_csv(filename):
             df.at[index, 'ft_symbol'] = security.get('symbol')
             df.at[index, 'ft_xid'] = security.get('xid')
         else:
-            print(f"No FT data found for {c_isin}")    
-
-        print(df.at[index, 'ft_symbol'])
+            errors += 1
+            continue
 
         for key, value in get_risk_data(df.at[index, 'ft_symbol']).items():
-            df.at[index, key] = value
+            df.at[index, key] = pd.to_numeric(value, errors='coerce')
         
         # Save the updated DataFrame back to CSV
         df.to_csv(filename, index=False)
