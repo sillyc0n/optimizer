@@ -1,4 +1,4 @@
-name: Step03 - Download Yahoo Quotes
+name: Step03 - Download FT Quotes
 
 on:
   workflow_dispatch:
@@ -9,11 +9,11 @@ on:
         default: 'false'
 
   schedule:
-    - cron: "0 5 * * 6"
+    - cron: "0 5 * * 9"
 
 env:
   HL_FUNDS: output/hl.csv
-  OUTPUT_DIRECTORY: output/quotes
+  OUTPUT_DIRECTORY: output/quotes_ft
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 permissions:
@@ -36,19 +36,19 @@ jobs:
         pip install poetry
         poetry config virtualenvs.create false
         poetry install --no-interaction --no-ansi --no-root
-    - name: Download Yahoo Quotes
+    - name: Download FT Quotes
       env:
         PURGE_QUOTES: ${{ github.event.inputs.PURGE_QUOTES }}
       run: |
         if [ "$PURGE_QUOTES" = "true" ]; then
           rm -rf $OUTPUT_DIRECTORY/*
         fi
-        python step03_yahoo.py $HL_FUNDS $OUTPUT_DIRECTORY
+        python step04_quotes_ft.py $HL_FUNDS $OUTPUT_DIRECTORY
     - name: Commit Step03
       run: |  
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git status
         git add -f $HL_FUNDS $OUTPUT_DIRECTORY
-        git commit -m "Automated download and commit - step03 - Yahoo Quotes"
+        git commit -m "Automated download and commit - step03 - FT Quotes"
         git push -f
