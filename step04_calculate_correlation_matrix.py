@@ -7,8 +7,6 @@ import math
 parser = argparse.ArgumentParser(description='Calculate Correlation Matrix for CSV Files')
 parser.add_argument('directory', help='Directory containing CSV files with quotes from Yahoo')
 parser.add_argument('correlation_csv', help='Output filename for correlation matrix CSV file')
-parser.add_argument('--output', help='Output filename for combined data CSV file (default: combined_data.csv)')
-#args.output = args.output or 'combined_data.csv'
 
 args = parser.parse_args()
 
@@ -68,10 +66,6 @@ print("\nCalculating Matrix. Please wait ...")
 
 # Combine all temporary DataFrames outside the loop
 combined_df = pd.concat(temp_dfs, axis=1, join='outer')
-
-if args.output:
-    print(f"Saving combined_data CSV to: {args.output}")
-    combined_df.to_csv(args.output, index=True)
 
 # Output the data frame to a file
 
