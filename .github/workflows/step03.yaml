@@ -9,7 +9,7 @@ on:
         default: 'false'
 
   schedule:
-    - cron: "0 5 * * 9"
+    - cron: "0 8 * * 6"
 
 env:
   HL_FUNDS: output/hl.csv
