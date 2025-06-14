@@ -81,7 +81,7 @@ def process_csv(filename):
         df.to_csv(filename, index=False)
 
         # Add a small delay to avoid overwhelming the API
-        time.sleep(0.5)
+        time.sleep(0.2)
 
     print(f"Processed {total} rows.")    
     print("Done.")
