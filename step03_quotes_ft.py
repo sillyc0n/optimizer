@@ -6,6 +6,7 @@ from urllib.parse import quote
 import sys
 from bs4 import BeautifulSoup
 import requests
+import AJBellFund
 
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
@@ -59,17 +60,32 @@ def process_csv(filename):
         # Progress output
         print(f"\rProcessing row {index+1} of {total}. Errors: {errors}", end='', flush=True)
         
-        # Fill c_isin if empty
-        if pd.isna(row['c_isin']) or not str(row['c_isin']).strip():
-            df.at[index, 'c_isin'] = f"GB00{row['sedol']}"
+        # TODO - check ajbell for isin
 
-        c_isin = df.at[index, 'c_isin']
-        ft_data = search_ft(c_isin)
+        # Fill c_isin if empty
+        #if pd.isna(row['c_isin']) or not str(row['c_isin']).strip():
+        #    c_isin = f"GB00{row['sedol']}"
+        #else:
+        #    c_isin = row['c_isin']
+
+        if pd.isna(row['isin']) or not str(row['isin']).strip():
+            sedol = row['sedol']
+            json = AJBellFund.fetch_instrument_data(sedol)
+            if json is None:
+                isin = None
+            else:
+                isin = json['isin']
+        else:
+            isin = row['isin']
+
+        if isin is not None:
+            ft_data = search_ft(isin)
 
         if ft_data and ft_data.get('data') and ft_data['data'].get('security'):
             security = ft_data['data']['security'][0]
             df.at[index, 'ft_symbol'] = security.get('symbol')
             df.at[index, 'ft_xid'] = security.get('xid')
+            df.at[index, 'isin'] = isin
         else:
             errors += 1
             continue
