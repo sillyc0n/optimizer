@@ -107,11 +107,12 @@ for sedol, symbol, yahoo_timestamp in zip(df['sedol'], df["yahoo_symbol"], df['y
     if symbol != None and not pd.isna(symbol):
         has_yahoo_symbol += 1
         # download quotes
-        period2 = int(time.time())
-        period1 = period2 - (365 * 24 * 60 * 60)
+        #period2 = int(time.time())
+        #period1 = period2 - (365 * 24 * 60 * 60)
 
         time.sleep(0.5)        
-        url = f"https://query2.finance.yahoo.com/v8/finance/chart/{symbol}?period1={period1}&period2={period2}&interval=1d&includePrePost=true&events=div%7Csplit%7Cearn&&lang=en-GB&region=GB"
+        #url = f"https://query2.finance.yahoo.com/v8/finance/chart/{symbol}?period1={period1}&period2={period2}&interval=1d&includePrePost=true&events=div%7Csplit%7Cearn&&lang=en-GB&region=GB"
+        url = f"https://query2.finance.yahoo.com/v8/finance/chart/{symbol}?range=10y&interval=1d&includePrePost=true&events=div%7Csplit%7Cearn&&lang=en-GB&region=GB"
         
         @retry(stop=stop_after_attempt(10), wait=wait_exponential(multiplier=2.5, min=4, max=10000))
         def safe_get_request(url, headers):
