@@ -4,12 +4,13 @@ Multi-Format Sharpe Ratio Calculator
 
 Calculates 1Y, 3Y, and 5Y Sharpe ratios from Yahoo Finance or Morningstar JSON data.
 Automatically detects the file format and parses accordingly.
-The script assumes a risk-free rate of 2% annually (adjustable).
+Allows specifying a custom risk-free rate as a percentage (default 2%).
 Properly handles null values by dropping those data points.
 """
 
 import json
 import sys
+import argparse
 from datetime import datetime, timedelta
 import numpy as np
 
@@ -234,7 +235,7 @@ def calculate_sharpe_ratio(returns, risk_free_rate=0.02):
     
     Args:
         returns: List of tuples (timestamp, daily_return)
-        risk_free_rate: Annual risk-free rate (default 2%)
+        risk_free_rate: Annual risk-free rate (as decimal, e.g., 0.02 for 2%)
     
     Returns:
         Sharpe ratio or None if insufficient data
@@ -269,17 +270,51 @@ def calculate_sharpe_ratio(returns, risk_free_rate=0.02):
     
     return sharpe_ratio
 
-def main():
-    if len(sys.argv) != 2:
-        print("Usage: python sharpe_calculator.py <json_file>")
-        print("Supports both Yahoo Finance and Morningstar JSON formats")
-        sys.exit(1)
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description='Calculate Sharpe ratios from Yahoo Finance or Morningstar JSON data',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python sharpe_calculator.py data.json
+  python sharpe_calculator.py data.json --risk-free-rate 3.5
+  python sharpe_calculator.py data.json -r 1.75
+
+The risk-free rate should be provided as a percentage (e.g., 2.5 for 2.5%).
+Default risk-free rate is 2.0%.
+        """
+    )
     
-    filename = sys.argv[1]
+    parser.add_argument('filename', 
+                       help='JSON file containing price data (Yahoo Finance or Morningstar format)')
+    
+    parser.add_argument('-r', '--risk-free-rate', 
+                       type=float, 
+                       default=2.0,
+                       help='Risk-free rate as a percentage (default: 2.0%%)')
+    
+    return parser.parse_args()
+
+def main():
+    # Parse command line arguments
+    args = parse_arguments()
+    
+    filename = args.filename
+    risk_free_rate_percent = args.risk_free_rate
+    
+    # Convert percentage to decimal
+    risk_free_rate = risk_free_rate_percent / 100.0
+    
+    # Validate risk-free rate
+    if risk_free_rate < 0 or risk_free_rate > 1:
+        print(f"Warning: Risk-free rate of {risk_free_rate_percent}% seems unusual.")
+        print("Expected range is typically 0% to 20%. Proceeding anyway...")
     
     try:
         # Load price data (automatically detects format and filters null values)
         print(f"Loading data from {filename}...")
+        print(f"Using risk-free rate: {risk_free_rate_percent}% ({risk_free_rate:.4f})")
         price_data = load_financial_data(filename)
         
         print(f"Proceeding with {len(price_data)} valid data points")
@@ -319,6 +354,7 @@ def main():
         print("\n" + "="*50)
         print("SHARPE RATIO ANALYSIS")
         print("="*50)
+        print(f"Risk-free rate: {risk_free_rate_percent}%")
         print(f"Available data span: {available_years:.1f} years")
         print(f"Calculating Sharpe ratios for: {', '.join([name for _, name in periods])}")
         print("-"*50)
@@ -332,7 +368,7 @@ def main():
                 continue
             
             # Calculate Sharpe ratio
-            sharpe = calculate_sharpe_ratio(period_returns)
+            sharpe = calculate_sharpe_ratio(period_returns, risk_free_rate)
             
             if sharpe is not None:
                 # Get some additional statistics
