@@ -2,12 +2,22 @@ import sys
 import requests
 import csv
 import time
-
 import json
+from tenacity import retry, wait_exponential, stop_after_attempt, RetryError
+
+@retry(wait=wait_exponential(multiplier=2, min=1, max=30), stop=stop_after_attempt(5))
+def get_json_from_url(url):
+    """
+    Makes a GET request to a URL and returns the JSON response.
+    Uses tenacity to retry on failures.
+    """
+    response = requests.get(url)
+    response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+    # The JSONDecodeError that might be raised by response.json() will also trigger a retry
+    return response.json()
 
 def scrape_funds_data(csv_file):
     # URL for JSON data
-        
     base_url = "https://www.hl.co.uk/ajax/funds/fund-search/search?investment=&companyid=&sectorid=&wealth=&unitTypePref=&tracker=&payment_frequency=&payment_type=&yield=&standard_ocf=&perf12m=&perf36m=&perf60m=&fund_size=&num_holdings=&start={}&rpp={}&lo=0&sort=fd.full_description&sort_dir=asc"
     
     # chunk size for the download
@@ -24,71 +34,71 @@ def scrape_funds_data(csv_file):
         writer = csv.writer(file)
 
         # Get the column names from the JSON response
-        
-        response = requests.get(base_url.format(0, chunk))
-        if response.status_code == 200:
-            data = response.json()
-            column_names = list(data["Results"][0].keys())
-
-            # Write the header row with column names
-            writer.writerow(column_names)
-
-            # Initialize the start parameter
-            start = 0
-
-            # Counter for downloaded funds
-            total_funds = 0
-
-            animation = "|/-\\"
-            index = 0
+        try:
+            print("Fetching data structure...")
+            data = get_json_from_url(base_url.format(0, chunk))
+            if not data or "Results" not in data or not data["Results"]:
+                print("\nCould not find any results in initial fetch. Aborting.")
+                return
             
-            # Iterate until "ResultsReturned" is 0
-            while True:
-                
-                progress = f"\rDownloading funds... {animation[index % len(animation)]} {total_funds} funds downloaded"
-                sys.stdout.write(progress)
-                sys.stdout.flush()
+            column_names = list(data["Results"][0].keys())
+            writer.writerow(column_names)
+            print("Successfully fetched data structure. Starting download.")
 
-                # Construct the URL with the current start parameter
-                url = base_url.format(start, chunk)
+        except RetryError as e:
+            print(f"\nFailed to fetch initial data after multiple retries: {e}")
+            return
+        except (KeyError, IndexError) as e:
+            print(f"\nCould not parse initial data structure from response: {e}")
+            return
 
-                # Send a GET request to the URL
-                response = requests.get(url)
+        # Initialize the start parameter
+        start = 0
 
-                # Check if the request was successful
-                if response.status_code == 200:
-                    # Get the JSON data from the response
-                    #try:
-                    data = response.json()
-                    #except json.decoder.JSONDecodeError:
-                    #    print(f"\nError decoding JSON response {response}")
-                    #    continue                        
+        # Counter for downloaded funds
+        total_funds = 0
 
-                    # Extract the "Results" list from the JSON data
-                    results = data["Results"]
+        animation = "|/-\\"
+        index = 0
+        
+        # Iterate until "ResultsReturned" is 0
+        while True:
+            
+            progress = f"\rDownloading funds... {animation[index % len(animation)]} {total_funds} funds downloaded"
+            sys.stdout.write(progress)
+            sys.stdout.flush()
 
-                    # Check if there are no more results
-                    if len(results) == 0:
-                        break
+            # Construct the URL with the current start parameter
+            url = base_url.format(start, chunk)
 
-                    # Write each fund's data as a row in the CSV file
-                    for fund in results:
-                        writer.writerow(fund.values())
-                        total_funds += 1
+            try:
+                data = get_json_from_url(url)
+            except RetryError as e:
+                print(f"\nFailed to retrieve data from {url} after multiple retries. Stopping download. Error: {e}")
+                break
 
-                    # Increment the start parameter by a chunk
-                    start += chunk                        
+            # Extract the "Results" list from the JSON data
+            results = data.get("Results")
 
-                    # Update progress
-                    index += 1
+            # Check if there are no more results
+            if not results:
+                break
 
-                    # Add a delay to not hammer the API
-                    time.sleep(sleep)
-                else:
-                    print("\nFailed to retrieve data from the URL:", url)
-                    break
+            # Write each fund's data as a row in the CSV file
+            for fund in results:
+                writer.writerow(fund.values())
+                total_funds += 1
 
-    print("\nData has been successfully saved to", csv_file)
+            # Increment the start parameter by a chunk
+            start += chunk                        
+
+            # Update progress
+            index += 1
+
+            # Add a delay to not hammer the API
+            time.sleep(sleep)
+
+    print(f"\nData has been successfully saved to {csv_file}. Total funds downloaded: {total_funds}")
 
 
 # Check if a CSV filename was provided as a command-line argument
@@ -97,4 +107,3 @@ if len(sys.argv) > 1:
     scrape_funds_data(filename)
 else:
     print("Please provide a CSV filename as a command-line argument.")
-
